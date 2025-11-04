@@ -26,13 +26,13 @@
 <meta property="og:site_name" content="SamSz04&#39;s Blog">
 <meta property="og:description" content="第一部分：深入解析旋转位置编码（RoPE）  旋转位置编码（RoPE）代表了位置编码领域的一次范式转移，它通过一种新颖的几何视角统一了绝对位置编码和相对位置编码。自提出以来，RoPE因其优越的性能和良好的理论特性，迅速成为众多先进大语言模型（如Llama、PaLM、Qwen）的标准配置 25。 1.1 概念框架：通过旋转编码位置 RoPE的核心思想极其直观且优雅：它不再通过向量加法来注入位">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/Transformer-position-embedding2/RotaryPE2.png">
+<meta property="og:image" content="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/RotaryPE2.png">
 <meta property="article:published_time" content="2025-11-04T06:38:41.000Z">
-<meta property="article:modified_time" content="2025-11-04T07:03:49.678Z">
+<meta property="article:modified_time" content="2025-11-04T07:16:41.312Z">
 <meta property="article:author" content="Samsz">
 <meta property="article:tag" content="Transformer">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/Transformer-position-embedding2/RotaryPE2.png">
+<meta name="twitter:image" content="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/RotaryPE2.png">
   
   
   
@@ -279,7 +279,7 @@
               <div class="markdown-body">
                 
                 <h2 id="第一部分深入解析旋转位置编码rope">第一部分：深入解析旋转位置编码（RoPE）</h2>
-<p><img src="Transformer-position-embedding2/RotaryPE2.png" srcset="/img/loading.gif" lazyload /></p>
+<p><img src="RotaryPE2.png" srcset="/img/loading.gif" lazyload /></p>
 <p>旋转位置编码（RoPE）代表了位置编码领域的一次范式转移，它通过一种新颖的几何视角统一了绝对位置编码和相对位置编码。自提出以来，RoPE因其优越的性能和良好的理论特性，迅速成为众多先进大语言模型（如Llama、PaLM、Qwen）的标准配置 25。</p>
 <h3 id="概念框架通过旋转编码位置">1.1 概念框架：通过旋转编码位置</h3>
 <p>RoPE的核心思想极其直观且优雅：它不再通过向量加法来注入位置信息，而是通过<strong>旋转</strong>查询（Q）和键（K）向量来实现 5。每个词元在序列中的绝对位置 <span class="math inline"><em>m</em></span> 对应一个特定的旋转角度。当Q和K向量根据它们各自的绝对位置 <span class="math inline"><em>m</em></span> 和 <span class="math inline"><em>n</em></span> 进行旋转后，它们之间的点积（即注意力分数的核心部分）将只依赖于它们的相对位置 <span class="math inline"><em>m</em> − <em>n</em></span> 15。</p>
