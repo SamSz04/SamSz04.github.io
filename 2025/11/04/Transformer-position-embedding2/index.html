@@ -28,7 +28,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/RotaryPE2.png">
 <meta property="article:published_time" content="2025-11-04T06:38:41.000Z">
-<meta property="article:modified_time" content="2025-11-04T07:16:41.312Z">
+<meta property="article:modified_time" content="2025-11-04T07:23:02.573Z">
 <meta property="article:author" content="Samsz">
 <meta property="article:tag" content="Transformer">
 <meta name="twitter:card" content="summary_large_image">
@@ -296,15 +296,13 @@
 <p>在复数域中，旋转可以通过乘以一个模为1的复数 <span class="math inline"><em>e</em><sup><em>j</em><em>θ</em></sup></span> 来实现。我们定义编码函数为：</p>
 <p><span class="math display"><em>f</em>(<strong>x</strong>, <em>m</em>) = <strong>x</strong> ⊙ <em>e</em><sup><em>j</em><em>m</em><strong>θ</strong></sup></span> 其中 <span class="math inline">⊙</span> 表示逐元素相乘，<span class="math inline"><strong>θ</strong> = [<em>θ</em><sub>1</sub>, <em>θ</em><sub>2</sub>, …, <em>θ</em><sub><em>d</em>/2</sub>]</span> 是一个包含不同旋转频率的向量。</p>
 <p>现在，我们来计算编码后的查询和键的内积（在复数域中，内积定义为 <span class="math inline">⟨<em>a</em>, <em>b</em>⟩ = <em>a</em> ⋅ <em>b̄</em></span>，其中 <span class="math inline"><em>b̄</em></span> 是 <span class="math inline"><em>b</em></span> 的共轭）： <span class="math display">$$
-\langle f(\mathbf{q}, m), f(\mathbf{k}, n) \rangle = \text{Re} \left( (\mathbf{q} \odot e^{jm\mathbf{\theta}}) \cdot \overline{(\mathbf{k} \odot e^{jn\mathbf{\theta}})} \right)
-$$</span></p>
-<p><span class="math display">$$
-= \text{Re} \left( (\mathbf{q} \odot e^{jm\mathbf{\theta}}) \cdot (\overline{\mathbf{k}} \odot e^{-jn\mathbf{\theta}}) \right)
-$$</span></p>
-<p><span class="math display">$$
-= \text{Re} \left( (\mathbf{q} \cdot \overline{\mathbf{k}}) \odot e^{j(m-n)\mathbf{\theta}} \right)
-$$</span></p>
-<p>从最后的结果可以看出，内积的表达式中只包含了相对位置 <span class="math inline"><em>m</em> − <em>n</em></span>，而绝对位置 <span class="math inline"><em>m</em></span> 和 <span class="math inline"><em>n</em></span> 被完美地消除了。</p>
+\begin{align*}
+\langle f(\mathbf{q}, m), f(\mathbf{k}, n) \rangle
+&amp;= \operatorname{Re}\big( (\mathbf{q}\odot e^{jm\boldsymbol{\theta}})\cdot\overline{(\mathbf{k}\odot e^{jn\boldsymbol{\theta}})} \big) \\
+&amp;= \operatorname{Re}\big( (\mathbf{q}\odot e^{jm\boldsymbol{\theta}})\cdot(\overline{\mathbf{k}}\odot e^{-jn\boldsymbol{\theta}}) \big) \\
+&amp;= \operatorname{Re}\big( (\mathbf{q}\cdot\overline{\mathbf{k}})\odot e^{j(m-n)\boldsymbol{\theta}} \big)
+\end{align*}
+$$</span> 从最后的结果可以看出，内积的表达式中只包含了相对位置 <span class="math inline"><em>m</em> − <em>n</em></span>，而绝对位置 <span class="math inline"><em>m</em></span> 和 <span class="math inline"><em>n</em></span> 被完美地消除了。</p>
 <p>将这个思想转换回实数域，对于向量中的每一对维度 <span class="math inline">(<em>x</em><sub>2<em>i</em></sub>, <em>x</em><sub>2<em>i</em> + 1</sub>)</span>，上述复数乘法等价于乘以一个2D旋转矩阵： <span class="math display">$$
 \begin{pmatrix} x'_{2i} \ x'_{2i+1} \end{pmatrix} = \begin{pmatrix} \cos(m\theta_i) &amp; -\sin(m\theta_i) \\ \sin(m\theta_i) &amp; \cos(m\theta_i) \end{pmatrix} \begin{pmatrix} x_{2i} \ x_{2i+1} \end{pmatrix}
 $$</span> 对于整个 <span class="math inline"><em>d</em></span> 维向量，这个操作相当于左乘一个块对角矩阵，其中每个对角块都是一个2D旋转矩阵。</p>
