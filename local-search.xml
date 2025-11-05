@@ -4,6 +4,35 @@
   
   
   <entry>
+    <title>论文阅读(1)——TpuGraphs</title>
+    <link href="/2025/11/05/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB1-tpugraphs/"/>
+    <url>/2025/11/05/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB1-tpugraphs/</url>
+    
+    <content type="html"><![CDATA[<p>论文：<a href="https://arxiv.org/abs/2308.13490">TpuGraphs: A Performance Prediction Dataset on Large Tensor Computational Graphs</a></p><p>Github仓库：<a href="https://github.com/google-research-datasets/tpu_graphs">google-research-datasets/tpu_graphs</a></p><p>论文分析：</p><p><img src="TpuGraph_RoPE_Page1.png" /> <img src="TpuGraph_RoPE_Page2.png" /> <img src="TpuGraph_RoPE_Page3.png" /> <img src="TpuGraph_RoPE_Page4.png" /> <img src="TpuGraph_RoPE_Page5.png" /> <img src="TpuGraph_RoPE_Page6.png" /> <img src="TpuGraph_RoPE_Page7.png" /> <img src="TpuGraph_RoPE_Page8.png" /> <img src="TpuGraph_RoPE_Page9.png" /> <img src="TpuGraph_RoPE_Page10.png" /> <img src="TpuGraph_RoPE_Page11.png" /> <img src="TpuGraph_RoPE_Page12.png" /> <img src="TpuGraph_RoPE_Page13.png" /> <img src="TpuGraph_RoPE_Page14.png" /> <img src="TpuGraph_RoPE_Page15.png" /> <img src="TpuGraph_RoPE_Page16.png" /> <img src="TpuGraph_RoPE_Page17.png" /> <img src="TpuGraph_RoPE_Page18.png" /> <img src="TpuGraph_RoPE_Page19.png" /> <img src="TpuGraph_RoPE_Page20.png" /> <img src="TpuGraph_RoPE_Page21.png" /> <img src="TpuGraph_RoPE_Page22.png" /> <img src="TpuGraph_RoPE_Page23.png" /> <img src="TpuGraph_RoPE_Page24.png" /> <img src="TpuGraph_RoPE_Page25.png" /> <img src="TpuGraph_RoPE_Page26.png" /></p>]]></content>
+    
+    
+    <categories>
+      
+      <category>AI</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>TPU</tag>
+      
+      <tag>Compiler</tag>
+      
+      <tag>AutoTuner</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>Transformer位置编码(2)——RoPE</title>
     <link href="/2025/11/04/Transformer-position-embedding2/"/>
     <url>/2025/11/04/Transformer-position-embedding2/</url>
