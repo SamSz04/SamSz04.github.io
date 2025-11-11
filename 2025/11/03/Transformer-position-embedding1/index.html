@@ -19,12 +19,12 @@
   <meta name="author" content="Samsz">
   <meta name="keywords" content="Transformer,Positional Embedding">
   
-    <meta name="description" content="第一部分：Transformer中位置信息的基础原理 1.1 自注意力机制中的置换不变性问题 Transformer架构的核心是自注意力（Self-Attention）机制，它赋予了模型强大的并行处理能力和捕捉长距离依赖的潜力。然而，这种设计也带来了一个固有的、必须被正视的局限性：置换不变性（Permutation Invariance）。从根本上说，自注意力机制将输入序列视为一个无序的标记集">
+    <meta name="description" content="第一部分：Transformer中位置信息的基础原理 1.1 自注意力机制中的置换不变性问题 Transformer架构的核心是自注意力（Self-Attention）机制，它赋予了模型强大的并行处理能力和捕捉长距离依赖的潜力。然而，这种设计也带来了一个固有的、必须被正视的局限性：置换不变性（Permutation Invariance）。从根本上说，自注意力机制将输入序列视为一个无序的标记集合（">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Transformer位置编码(1)——初探">
 <meta property="og:url" content="https://samsz04.github.io/2025/11/03/Transformer-position-embedding1/index.html">
 <meta property="og:site_name" content="SamSz04&#39;s Blog">
-<meta property="og:description" content="第一部分：Transformer中位置信息的基础原理 1.1 自注意力机制中的置换不变性问题 Transformer架构的核心是自注意力（Self-Attention）机制，它赋予了模型强大的并行处理能力和捕捉长距离依赖的潜力。然而，这种设计也带来了一个固有的、必须被正视的局限性：置换不变性（Permutation Invariance）。从根本上说，自注意力机制将输入序列视为一个无序的标记集">
+<meta property="og:description" content="第一部分：Transformer中位置信息的基础原理 1.1 自注意力机制中的置换不变性问题 Transformer架构的核心是自注意力（Self-Attention）机制，它赋予了模型强大的并行处理能力和捕捉长距离依赖的潜力。然而，这种设计也带来了一个固有的、必须被正视的局限性：置换不变性（Permutation Invariance）。从根本上说，自注意力机制将输入序列视为一个无序的标记集合（">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/03/Transformer-position-embedding1/image1.jpg">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/03/Transformer-position-embedding1/image2.png">
@@ -32,7 +32,7 @@
 <meta property="og:image" content="https://samsz04.github.io/2025/11/03/Transformer-position-embedding1/image4.png">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/03/Transformer-position-embedding1/image5.jpg">
 <meta property="article:published_time" content="2025-11-03T07:32:38.000Z">
-<meta property="article:modified_time" content="2025-11-05T06:51:53.605Z">
+<meta property="article:modified_time" content="2025-11-11T10:21:23.866Z">
 <meta property="article:author" content="Samsz">
 <meta property="article:tag" content="Transformer">
 <meta name="twitter:card" content="summary_large_image">
@@ -282,61 +282,64 @@
             
               <div class="markdown-body">
                 
-                <h2 id="第一部分transformer中位置信息的基础原理">第一部分：Transformer中位置信息的基础原理</h2>
-<h3 id="自注意力机制中的置换不变性问题">1.1 自注意力机制中的置换不变性问题</h3>
+                <h2 id="第一部分：Transformer中位置信息的基础原理">第一部分：Transformer中位置信息的基础原理</h2>
+<h3 id="1-1-自注意力机制中的置换不变性问题">1.1 自注意力机制中的置换不变性问题</h3>
 <p>Transformer架构的核心是<strong>自注意力（Self-Attention）机制</strong>，它赋予了模型强大的并行处理能力和捕捉长距离依赖的潜力。然而，这种设计也带来了一个固有的、必须被正视的局限性：<strong>置换不变性（Permutation Invariance）</strong>。从根本上说，自注意力机制将输入序列视为一个<strong>无序的标记集合（“bag of words”）</strong>，而非一个有序的序列。</p>
-<p>这种特性源于其核心计算过程。对于一个给定的输入序列，自注意力机制通过计算查询（Query, Q）、键（Key, K）和值（Value, V）矩阵之间的点积来生成注意力分数，其公式可以简化为 <span class="math inline">$Attention(Q, K, V) = \text{softmax}(\frac{QK^T}{\sqrt{d_k}})V$</span>。在这个计算中，任何一个标记的输出表示都是其对序列中所有其他标记的加权求和。关键在于，这些权重仅取决于Q和K向量之间的相似度，而与它们在序列中的原始位置无关。因此，如果输入序列的顺序被打乱，自注意力机制的输出序列也会以同样的方式被打乱，但每个标记自身的表示向量并不会因其位置的改变而改变。这一特性被称为置换等变性（Permutation Equivariance）。</p>
+<p>这种特性源于其核心计算过程。对于一个给定的输入序列，自注意力机制通过计算查询（Query, Q）、键（Key, K）和值（Value, V）矩阵之间的点积来生成注意力分数，其公式可以简化为 $Attention(Q, K, V) = \text{softmax}(\frac{QK^T}{\sqrt{d_k}})V$。在这个计算中，任何一个标记的输出表示都是其对序列中所有其他标记的加权求和。关键在于，这些权重仅取决于Q和K向量之间的相似度，而与它们在序列中的原始位置无关。因此，如果输入序列的顺序被打乱，自注意力机制的输出序列也会以同样的方式被打乱，但每个标记自身的表示向量并不会因其位置的改变而改变。这一特性被称为置换等变性（Permutation Equivariance）。</p>
 <p>这种架构特性意味着，如果没有额外的位置信息，模型将无法区分语义完全不同的句子，例如“猫坐在垫子上”和“垫子坐在猫上”。对于模型而言，这两个句子包含了完全相同的词元集合，因此自注意力机制会为它们生成相似的内部表示，这在自然语言处理任务中是不可接受的。</p>
 <p>深入分析可以发现，对位置编码的需求并非Transformer设计中的疏忽，而是其最大优势——<strong>并行化</strong>——所带来的必然结果。传统的序列模型，如循环神经网络（RNN）和长短期记忆网络（LSTM），通过其固有的循环结构来处理序列。它们一次处理一个词元，将前一个时间步的信息通过隐藏状态传递到下一个时间步，这种顺序处理的方式天然地编码了词元的位置和顺序信息。然而，这种顺序依赖性也成为了它们的瓶颈，阻碍了大规模并行计算，限制了模型在现代硬件（如GPU）上的训练效率。</p>
-<p>Transformer架构通过完全摒弃循环结构，实现了对整个输入序列的并行处理，从而极大地提升了计算效率。模型中的每个词元可以同时与所有其他词元进行交互，这使得Transformer能够高效地处理长序列。然而，正是这种架构选择，即用并行计算换取顺序处理，导致了模型失去了对序列顺序的内在感知能力。因此，<strong>位置编码（Positional Encoding）</strong>应运而生，它是一种工程上的解决方案，旨在将至关重要的顺序信息重新注入到一个本质上是并行化的框架中。这体现了在计算效率和结构感知能力之间经典的工程权衡。</p>
-<p><img src="image1.jpg" srcset="/img/loading.gif" lazyload /></p>
-<h3 id="位置编码策略分类">1.2 位置编码策略分类</h3>
+<p>Transformer架构通过完全摒弃循环结构，实现了对整个输入序列的并行处理，从而极大地提升了计算效率。模型中的每个词元可以同时与所有其他词元进行交互，这使得Transformer能够高效地处理长序列。然而，正是这种架构选择，即用并行计算换取顺序处理，导致了模型失去了对序列顺序的内在感知能力。因此，**位置编码（Positional Encoding）**应运而生，它是一种工程上的解决方案，旨在将至关重要的顺序信息重新注入到一个本质上是并行化的框架中。这体现了在计算效率和结构感知能力之间经典的工程权衡。</p>
+<p><img src="image1.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
+<h3 id="1-2-位置编码策略分类">1.2 位置编码策略分类</h3>
 <p>为了解决自注意力机制的置换不变性问题，研究者们开发了多种策略来为模型提供位置信息。这些策略可以大致分为<strong>三个主要类别</strong>，为理解后续更高级的技术（如RoPE）提供了清晰的框架。</p>
-<ol type="1">
+<ol>
 <li><strong>绝对位置编码 (Absolute Positional Embeddings, APE):</strong> 这类方法为序列中的<strong>每一个绝对位置</strong>（例如，第1个位置、第2个位置等）<strong>分配一个唯一的、固定的向量</strong>。这个位置向量随后会与对应位置的词元嵌入（token embedding）相结合，通常是通过相加的方式。这样，即使是相同的词元，在序列的不同位置也会拥有不同的最终表示，从而使模型能够区分它们的顺序。最经典的方法是Vaswani等人在原始Transformer论文中提出的正弦/余弦编码。</li>
 <li><strong>相对位置编码 (Relative Positional Embeddings, RPE):</strong> 与关注绝对位置不同，相对位置编码的核心思想是模型更应该关注词元之间的相对关系，即<strong>它们之间的距离或方向</strong>。这类方法通常不是在输入层修改词元嵌入，而是在自注意力计算过程中直接注入相对位置信息。例如，通过为查询和键之间的特定距离添加一个可学习的偏置项（bias），使得注意力分数能够感知到两个词元“相距多远”。</li>
-<li><strong>混合/旋转方法 (Hybrid/Rotary Approaches): </strong>这类方法，以旋转位置编码（Rotary Position Embedding, RoPE）为代表，巧妙地<strong>结合了绝对位置和相对位置编码的思想</strong>。RoPE利用一个与绝对位置相关的函数（旋转矩阵）来<strong>变换查询Q和键向量K</strong>。其精妙之处在于，经过变换后的查询和键向量进行点积运算时，其<strong>结果仅依赖于它们的相对位置</strong>。这样，模型既利用了绝对位置信息来生成编码，又在注意力机制中实现了纯粹的相对位置依赖。</li>
+<li><strong>混合/旋转方法 (Hybrid/Rotary Approaches): <strong>这类方法，以旋转位置编码（Rotary Position Embedding, RoPE）为代表，巧妙地</strong>结合了绝对位置和相对位置编码的思想</strong>。RoPE利用一个与绝对位置相关的函数（旋转矩阵）来<strong>变换查询Q和键向量K</strong>。其精妙之处在于，经过变换后的查询和键向量进行点积运算时，其<strong>结果仅依赖于它们的相对位置</strong>。这样，模型既利用了绝对位置信息来生成编码，又在注意力机制中实现了纯粹的相对位置依赖。</li>
 </ol>
-<h2 id="第二部分向相对位置感知的演进">第二部分：向相对位置感知的演进</h2>
+<h2 id="第二部分：向相对位置感知的演进">第二部分：向相对位置感知的演进</h2>
 <p>位置编码技术的发展历程反映了研究界对模型如何最有效地利用序列信息的不断深入的理解。从最初的绝对位置方案，到更加灵活的相对位置方案，每一次演进都是为了克服前代方法的局限性。</p>
-<h3 id="绝对位置编码ape正弦函数方法">2.1 绝对位置编码（APE）：正弦函数方法</h3>
+<h3 id="2-1-绝对位置编码（APE）：正弦函数方法">2.1 绝对位置编码（APE）：正弦函数方法</h3>
 <p>在最初的Transformer论文《Attention Is All You Need》中，Vaswani等人提出了一种优雅且高效的绝对位置编码方案，即正弦位置编码。该方法不依赖于学习，而是通过一个固定的数学公式生成位置向量。</p>
-<p>其核心公式如下： <span class="math display">$$
-PE_{(pos, 2i)} = \sin(\frac{pos}{10000^{2i/d_{\text{model}}}})
-$$</span></p>
-<p><span class="math display">$$
-PE_{(pos, 2i+1)} = \cos(\frac{pos}{10000^{2i/d_{\text{model}}}})
-$$</span></p>
+<p>其核心公式如下：<br>
+$$<br>
+PE_{(pos, 2i)} = \sin(\frac{pos}{10000^{2i/d_{\text{model}}}})<br>
+$$</p>
+<p>$$<br>
+PE_{(pos, 2i+1)} = \cos(\frac{pos}{10000^{2i/d_{\text{model}}}})<br>
+$$</p>
 <p>其中：</p>
 <ul>
-<li><span class="math inline"><em>p</em><em>o</em><em>s</em></span> 是词元在序列中的绝对位置索引（从0开始）。</li>
-<li><span class="math inline"><em>i</em></span> 是位置编码向量中的维度索引（从0开始）。</li>
-<li><span class="math inline"><em>d</em><sub>model</sub></span> 是词元嵌入和位置编码向量的总维度。</li>
+<li>$pos$ 是词元在序列中的绝对位置索引（从0开始）。</li>
+<li>$i$ 是位置编码向量中的维度索引（从0开始）。</li>
+<li>$d_{\text{model}}$​ 是词元嵌入和位置编码向量的总维度。</li>
 </ul>
-<p><img src="image2.png" srcset="/img/loading.gif" lazyload /></p>
-<p>这个公式的设计蕴含了深刻的考量。首先，通过<strong>交替使用正弦和余弦函数</strong>，并为每个维度对（<span class="math inline">2<em>i</em></span> 和 <span class="math inline">2<em>i</em> + 1</span>）分配一个不同的波长（频率），它为每个位置 <span class="math inline"><em>p</em><em>o</em><em>s</em></span> 生成了一个唯一的 <span class="math inline"><em>d</em><sub>model</sub></span> 维向量。这些波长的变化范围从短到长：对于维度索引 <span class="math inline"><em>i</em></span> 较小的<strong>低维部分</strong>（例如，<span class="math inline"><em>i</em> = 0, 1, 2...</span>，即编码向量的起始部分），分母中的指数项接近0，使得频率很大（接近1），对应的波长很短，函数值变化迅速。这种快速的变化为模型提供了非常精确的、关于<strong>相邻词元</strong>之间差异的信号。模型可以轻易地分辨出“这是第3个词”和“这是第4个词”；对于<strong>高维部分</strong>（例如，<span class="math inline"><em>i</em></span>接近<span class="math inline"><em>d</em><sub><em>m</em><em>o</em><em>d</em><em>e</em><em>l</em></sub>/2</span>，即编码向量的末尾部分），频率则变得非常小，对应波长较大，那么函数值会随着<span class="math inline"><em>p</em><em>o</em><em>s</em></span>的增加而变得非常缓慢，只有当<span class="math inline"><em>p</em><em>o</em><em>s</em></span>的值发生巨大变化时（例如，从<span class="math inline"><em>p</em><em>o</em><em>s</em> = 5</span>到<span class="math inline"><em>p</em><em>o</em><em>s</em> = 500</span>），编码值才会有明显的不同，从而使模型把握到全局信息。这种多尺度的频率组合使得模型能够同时捕捉到粗粒度和细粒度的位置信息。</p>
-<p><img src="image3.jpg" srcset="/img/loading.gif" lazyload /></p>
-<p>其次，这种基于正弦函数的设计有一个重要的特性：对于任意固定的偏移量 <span class="math inline"><em>k</em></span>，位置 <span class="math inline"><em>p</em><em>o</em><em>s</em> + <em>k</em></span> 的位置编码 <span class="math inline"><em>P</em><em>E</em><sub>(<em>p</em><em>o</em><em>s</em> + <em>k</em>)</sub></span> 可以表示为 <span class="math inline"><em>P</em><em>E</em><sub>(<em>p</em><em>o</em><em>s</em>)</sub></span> 的线性函数。这一特性使得模型能够更容易地学习到<strong>相对位置关系</strong>。模型可以通过注意力机制学习到如何关注相距特定距离的词元，因为它们的<strong>位置编码之间存在固定的线性变换关系</strong>。</p>
-<p>最后，一个常被引用的优点是，这种确定性的公式使得模型理论上能够外推到比训练时遇到的更长的序列长度。因为即使对于未见过的位置 <span class="math inline"><em>p</em><em>o</em><em>s</em></span>，我们依然可以计算出其对应的位置编码向量（泛化能力更强）。生成的位置编码向量会与词元的语义嵌入向量逐元素相加，形成最终的输入表示，然后被送入Transformer的后续层。</p>
-<p><img src="image4.png" srcset="/img/loading.gif" lazyload /></p>
-<h3 id="相对位置编码rpe的兴起">2.2 相对位置编码（RPE）的兴起</h3>
+<p><img src="image2.png" srcset="/img/loading.gif" lazyload alt=""></p>
+<p>这个公式的设计蕴含了深刻的考量。首先，通过<strong>交替使用正弦和余弦函数</strong>，并为每个维度对（$2i$ 和 $2i+1$）分配一个不同的波长（频率），它为每个位置 $pos$ 生成了一个唯一的 $d_{\text{model}}$ 维向量。这些波长的变化范围从短到长：对于维度索引 $i$ 较小的<strong>低维部分</strong>（例如，$i=0,1,2…$，即编码向量的起始部分），分母中的指数项接近0，使得频率很大（接近1），对应的波长很短，函数值变化迅速。这种快速的变化为模型提供了非常精确的、关于<strong>相邻词元</strong>之间差异的信号。模型可以轻易地分辨出“这是第3个词”和“这是第4个词”；对于<strong>高维部分</strong>（例如，$i$接近$d_{model}/2$，即编码向量的末尾部分），频率则变得非常小，对应波长较大，那么函数值会随着$pos$的增加而变得非常缓慢，只有当$pos$的值发生巨大变化时（例如，从$pos=5$到$pos=500$），编码值才会有明显的不同，从而使模型把握到全局信息。这种多尺度的频率组合使得模型能够同时捕捉到粗粒度和细粒度的位置信息。</p>
+<p><img src="image3.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
+<p>其次，这种基于正弦函数的设计有一个重要的特性：对于任意固定的偏移量 $k$，位置 $pos+k$ 的位置编码 $PE_{(pos+k)}$ 可以表示为 $PE_{(pos)}$ 的线性函数。这一特性使得模型能够更容易地学习到<strong>相对位置关系</strong>。模型可以通过注意力机制学习到如何关注相距特定距离的词元，因为它们的<strong>位置编码之间存在固定的线性变换关系</strong>。</p>
+<p>最后，一个常被引用的优点是，这种确定性的公式使得模型理论上能够外推到比训练时遇到的更长的序列长度。因为即使对于未见过的位置 $pos$，我们依然可以计算出其对应的位置编码向量（泛化能力更强）。生成的位置编码向量会与词元的语义嵌入向量逐元素相加，形成最终的输入表示，然后被送入Transformer的后续层。</p>
+<p><img src="image4.png" srcset="/img/loading.gif" lazyload alt=""></p>
+<h3 id="2-2-相对位置编码（RPE）的兴起">2.2 相对位置编码（RPE）的兴起</h3>
 <p>尽管正弦绝对位置编码在实践中表现良好，但它也存在一些理论上的局限性。例如，虽然它允许模型学习相对关系，但这种关系是间接的。此外，对于非常长的序列，其外推能力的鲁棒性也受到质疑。为了更直接、更灵活地建模词元间的相对关系，相对位置编码（RPE）应运而生。</p>
 <p>RPE的核心思想是，词元之间的注意力强度不应取决于它们的绝对位置，而应取决于它们之间的相对距离。例如，在句子中相距3个词元的两个词，无论它们出现在句首还是句末，它们之间的关系模式都可能具有共性。</p>
-<p>与APE在输入层修改嵌入向量不同，RPE通常在自注意力机制的内部发挥作用。一种常见且有影响力的方法（如T5模型中所使用的）是，在计算注意力分数时，直接向查询-键（Query-Key）点积结果中添加一个可学习的偏置项（bias）。这个偏置项的值取决于查询和键之间的相对距离 <span class="math inline"><em>j</em> − <em>i</em></span>。</p>
-<p>具体来说，注意力分数的计算可以修改为： <span class="math display">$$
-e_{ij} = \frac{(x_i W_Q)(x_j W_K)^T + b_{j-i}}{\sqrt{d_k}}
-$$</span> 其中，<span class="math inline"><em>x</em><sub><em>i</em></sub><em>W</em><sub><em>Q</em></sub></span> 是查询向量，<span class="math inline"><em>x</em><sub><em>j</em></sub><em>W</em><sub><em>K</em></sub></span> 是键向量，<span class="math inline"><em>b</em><sub><em>j</em> − <em>i</em></sub></span> 是一个与相对距离 <span class="math inline"><em>j</em> − <em>i</em></span> 对应的可学习标量偏置。通过为每个可能的相对距离（例如，-k到+k）学习一个独立的偏置值，模型可以直接建模相对位置对注意力强度的影响。这种方式使得模型对序列长度的变化更加鲁棒，并且能够显式地捕捉到词元间的成对关系。</p>
-<h3 id="对比分析ape与rpe的优势与局限">2.3 对比分析：APE与RPE的优势与局限</h3>
+<p>与APE在输入层修改嵌入向量不同，RPE通常在自注意力机制的内部发挥作用。一种常见且有影响力的方法（如T5模型中所使用的）是，在计算注意力分数时，直接向查询-键（Query-Key）点积结果中添加一个可学习的偏置项（bias）。这个偏置项的值取决于查询和键之间的相对距离 $j-i$。</p>
+<p>具体来说，注意力分数的计算可以修改为：<br>
+$$<br>
+e_{ij} = \frac{(x_i W_Q)(x_j W_K)^T + b_{j-i}}{\sqrt{d_k}}<br>
+$$<br>
+其中，$x_i W_Q$ 是查询向量，$x_j W_K$ 是键向量，$b_{j-i}$ 是一个与相对距离 $j-i$ 对应的可学习标量偏置。通过为每个可能的相对距离（例如，-k到+k）学习一个独立的偏置值，模型可以直接建模相对位置对注意力强度的影响。这种方式使得模型对序列长度的变化更加鲁棒，并且能够显式地捕捉到词元间的成对关系。</p>
+<h3 id="2-3-对比分析：APE与RPE的优势与局限">2.3 对比分析：APE与RPE的优势与局限</h3>
 <p>APE和RPE代表了两种不同的哲学思想，它们的演进为RoPE的出现奠定了基础。这场演进的背后，是模型设计中计算效率与表示能力之间根本性的张力，尤其是在“高效注意力”机制兴起的背景下，这一矛盾变得尤为突出。</p>
 <p>APE，特别是正弦编码，其实现非常简单且计算高效。位置编码向量可以预先计算并存储，然后在模型前向传播的开始阶段与词元嵌入相加。这个过程是“可分离的”，意味着它在注意力层之外完成，并且每个词元的位置编码是独立计算的。这种特性使其与任何类型的注意力机制都能无缝兼容。然而，其主要缺点在于对相对位置的建模是间接的，并且在面对远超训练长度的序列时，其泛化能力可能会下降。</p>
-<p>RPE通过直接修改注意力分数，为模型提供了更强大的、关于词元间相对距离的归纳偏置。这使得它在处理可变长度序列和捕捉局部上下文方面表现出色。然而，这种方法的实现方式带来了新的挑战。特别是，像T5风格的偏置方法，需要在计算注意力时访问一个依赖于相对位置的偏置矩阵，这与标准注意力机制的 <span class="math inline"><em>O</em>(<em>L</em><sup>2</sup> ⋅ <em>d</em>)</span> 复杂度和内存占用是相容的。</p>
-<p>然而，随着模型规模和序列长度的不断增长，标准注意力机制的二次方复杂度成为一个巨大的瓶颈。为了解决这个问题，研究界开发了多种“高效注意力”或“线性注意力”方法（例如，基于核函数的方法，如Performer）。这些方法的核心思想是通过数学变换来避免显式地计算和存储完整的 <span class="math inline"><em>N</em> × <em>N</em></span> 注意力矩阵。</p>
+<p>RPE通过直接修改注意力分数，为模型提供了更强大的、关于词元间相对距离的归纳偏置。这使得它在处理可变长度序列和捕捉局部上下文方面表现出色。然而，这种方法的实现方式带来了新的挑战。特别是，像T5风格的偏置方法，需要在计算注意力时访问一个依赖于相对位置的偏置矩阵，这与标准注意力机制的 $O(L^2 \cdot d)$ 复杂度和内存占用是相容的。</p>
+<p>然而，随着模型规模和序列长度的不断增长，标准注意力机制的二次方复杂度成为一个巨大的瓶颈。为了解决这个问题，研究界开发了多种“高效注意力”或“线性注意力”方法（例如，基于核函数的方法，如Performer）。这些方法的核心思想是通过数学变换来避免显式地计算和存储完整的 $N \times N$ 注意力矩阵。</p>
 <p>这就产生了一个深刻的架构冲突：RPE需要修改一个我们正极力避免去计算的注意力矩阵。如何为一个不存在的矩阵添加相对位置偏置？这个难题揭示了一个深层次的架构约束。社区迫切需要一种新的位置编码方法，它既能提供RPE的相对位置建模优势（如灵活性和泛化能力），又能保持APE的计算可分离性，从而与新兴的线性注意力架构兼容。</p>
 <p>旋转位置编码（RoPE）正是对这一需求的直接回应。它通过在计算点积之前独立地变换查询和键向量，巧妙地将相对位置信息编码进去。这种“预处理”的方式是可分离的，因此完美地解决了上述架构冲突，统一了相对编码的强大能力和线性注意力的计算效率。</p>
 <p>下表系统地总结了这几种主流位置编码方法的特点，突显了驱动技术向RoPE演进的核心动因。</p>
 <table>
 <thead>
-<tr class="header">
+<tr>
 <th><strong>方法论</strong></th>
 <th><strong>机制</strong></th>
 <th><strong>位置类型</strong></th>
@@ -345,21 +348,21 @@ $$</span> 其中，<span class="math inline"><em>x</em><sub><em>i</em></sub><em>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><strong>绝对位置编码 (APE)</strong></td>
 <td>将位置向量<strong>加</strong>到词元嵌入上</td>
 <td>绝对位置</td>
 <td>理论上可行，但鲁棒性有限</td>
 <td>良好</td>
 </tr>
-<tr class="even">
+<tr>
 <td><strong>相对位置编码 (RPE)</strong></td>
 <td>将位置偏置<strong>加</strong>到注意力分数上</td>
 <td>相对位置</td>
 <td>良好</td>
 <td>差（不兼容）</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><strong>旋转位置编码 (RoPE)</strong></td>
 <td>将词元嵌入（Q/K）与位置向量<strong>相乘</strong>（旋转）</td>
 <td>绝对位置编码，实现相对位置依赖</td>
@@ -368,9 +371,9 @@ $$</span> 其中，<span class="math inline"><em>x</em><sub><em>i</em></sub><em>
 </tr>
 </tbody>
 </table>
-<h2 id="第三部分通往旋转位置编码之路">第三部分：通往旋转位置编码之路</h2>
+<h2 id="第三部分：通往旋转位置编码之路">第三部分：通往旋转位置编码之路</h2>
 <p>至此，我们已经完整地回顾了位置编码技术演进的脉络。我们从Transformer架构最根本的需求——克服“置换不变性”——出发，了解了最初的绝对位置编码（APE）如何通过巧妙的正弦函数设计，为模型注入了顺序感。随后，我们看到了相对位置编码（RPE）的兴起，它将关注点从“绝对位置”转向了更灵活的“相对距离”，为模型提供了更强的归纳偏置。</p>
-<p><img src="image5.jpg" srcset="/img/loading.gif" lazyload /></p>
+<p><img src="image5.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
 <p>然而，正如我们的对比分析所揭示的，这场演进也带来了一个深刻的架构矛盾：随着模型对计算效率的要求越来越高，尤其是线性注意力机制的出现，旨在修改注意力矩阵的RPE方案变得难以兼容。一个核心问题摆在了研究者面前：<strong>我们能否创造出一种既拥有RPE相对位置建模的强大能力，又具备APE计算上的高效与分离特性的位置编码方法？</strong></p>
 <p>这个问题的答案，正是我们下一期将要深入探讨的主角——<strong>旋转位置编码（RoPE）</strong>。</p>
 <p>在第二期中，我们将彻底解构RoPE的迷人之处：</p>
