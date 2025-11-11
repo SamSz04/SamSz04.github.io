@@ -19,12 +19,12 @@
   <meta name="author" content="Samsz">
   <meta name="keywords" content="Transformer,Positional Embedding,YaRN,Length Extrapolation">
   
-    <meta name="description" content="第一部分：问题的根源——RoPE 的“上下文天花板” 1.1 引言  [!NOTE] 建议先去阅读一下这篇大佬的文章：探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园，里面讲解的很清晰！本篇意在用更加用更少的篇幅尝试讲清楚YaRN 这一解决方案！  大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂">
+    <meta name="description" content="第一部分：问题的根源——RoPE 的“上下文天花板” 1.1 引言  建议先去阅读一下这篇大佬的文章：探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园，里面讲解的很清晰！本篇意在用更少的篇幅尝试讲清楚YaRN 这一解决方案！  大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂的应用至关重要，例如处理">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Transformer位置编码(3)——从RoPE到YaRN外推">
 <meta property="og:url" content="https://samsz04.github.io/2025/11/11/Transformer3/index.html">
 <meta property="og:site_name" content="SamSz04&#39;s Blog">
-<meta property="og:description" content="第一部分：问题的根源——RoPE 的“上下文天花板” 1.1 引言  [!NOTE] 建议先去阅读一下这篇大佬的文章：探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园，里面讲解的很清晰！本篇意在用更加用更少的篇幅尝试讲清楚YaRN 这一解决方案！  大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂">
+<meta property="og:description" content="第一部分：问题的根源——RoPE 的“上下文天花板” 1.1 引言  建议先去阅读一下这篇大佬的文章：探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园，里面讲解的很清晰！本篇意在用更少的篇幅尝试讲清楚YaRN 这一解决方案！  大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂的应用至关重要，例如处理">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/11/Transformer3/image1.jpg">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/11/Transformer3/image2.jpg">
@@ -36,7 +36,7 @@
 <meta property="og:image" content="https://samsz04.github.io/2025/11/11/Transformer3/image8.jpg">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/11/Transformer3/image9.jpg">
 <meta property="article:published_time" content="2025-11-11T02:57:35.000Z">
-<meta property="article:modified_time" content="2025-11-11T10:00:47.669Z">
+<meta property="article:modified_time" content="2025-11-11T10:06:11.626Z">
 <meta property="article:author" content="Samsz">
 <meta property="article:tag" content="Transformer">
 <meta name="twitter:card" content="summary_large_image">
@@ -289,27 +289,20 @@
                 <h2 id="第一部分问题的根源rope-的上下文天花板">第一部分：问题的根源——RoPE 的“上下文天花板”</h2>
 <h3 id="引言">1.1 引言</h3>
 <blockquote>
-<p>[!NOTE]</p>
-<p>建议先去阅读一下这篇大佬的文章：<a target="_blank" rel="noopener" href="https://www.cnblogs.com/rossiXYZ/p/18808744">探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园</a>，里面讲解的很清晰！本篇意在用更加用更少的篇幅尝试讲清楚<strong>YaRN </strong>这一解决方案！</p>
+<p>建议先去阅读一下这篇大佬的文章：<a target="_blank" rel="noopener" href="https://www.cnblogs.com/rossiXYZ/p/18808744">探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园</a>，里面讲解的很清晰！本篇意在用更少的篇幅尝试讲清楚<strong>YaRN </strong>这一解决方案！</p>
 </blockquote>
 <p>大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂的应用至关重要，例如处理长文档摘要、执行“大海捞针”式的知识库问答 (RAG)，或在大型代码库中进行辅助编程 。然而，大多数开源的 LLM（例如 Llama 2 系列）在设计上都受限于其预训练阶段设定的上下文窗口（例如 4096 个 token），这构成了它们能力的“天花板”。</p>
-<figure>
-<img src="image1.jpg" srcset="/img/loading.gif" lazyload alt="image1" /><figcaption aria-hidden="true">image1</figcaption>
-</figure>
+<p><img src="image1.jpg" srcset="/img/loading.gif" lazyload /></p>
 <h3 id="rope-回顾可参考笔者上期内容transformer位置编码2rope">1.2 RoPE 回顾（可参考笔者上期内容：<a href="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/">Transformer位置编码(2)——RoPE</a>）</h3>
 <p>为了理解 YaRN，必须首先回顾它所要改进的基础：旋转位置编码 (RoPE) 。</p>
 <p>RoPE 的核心思想是，注意力分数应该只取决于 token 之间的相对距离 。它通过对查询 (<span class="math inline"><em>q</em></span>) 和键 (<span class="math inline"><em>k</em></span>) 向量应用一个与绝对位置 <em>m</em> 相关的旋转矩阵 <span class="math inline"><em>R</em><sub><em>m</em></sub></span> 来实现这一点 。</p>
 <p>给定位置 <span class="math inline"><em>m</em></span> 处的 <span class="math inline"><em>q</em></span> 向量和位置 <span class="math inline"><em>n</em></span> 处的 <span class="math inline"><em>k</em></span> 向量，它们的位置编码版本 <span class="math inline"><em>q</em><sub><em>m</em></sub></span> 和 <span class="math inline"><em>k</em><sub><em>n</em></sub></span> 之间的内积 <span class="math inline"><em>q</em><sub><em>m</em></sub><sup><em>T</em></sup><em>k</em><sub><em>n</em></sub></span> 最终只依赖于相对位置 <span class="math inline">(<em>m</em> − <em>n</em>)</span> 。这种旋转是通过复数乘法或等效的 2x2 旋转矩阵实现的，其旋转角度 <span class="math inline"><em>θ</em><sub><em>m</em>, <em>d</em></sub></span> 由绝对位置 <span class="math inline"><em>m</em></span> 和维度索引 <span class="math inline"><em>d</em></span> 共同决定：</p>
 <p><span class="math display"><em>θ</em><sub><em>m</em>, <em>d</em></sub> = <em>m</em> ⋅ <em>θ</em><sub><em>d</em></sub> = <em>m</em> ⋅ <em>b</em><sup> − 2<em>d</em>/<em>D</em></sup></span> 其中 <span class="math inline"><em>b</em></span> 是一个固定的基数（例如 10000），<span class="math inline"><em>D</em></span> 是特征维度。</p>
-<figure>
-<img src="image2.jpg" srcset="/img/loading.gif" lazyload alt="image2" /><figcaption aria-hidden="true">image2</figcaption>
-</figure>
+<p><img src="image2.jpg" srcset="/img/loading.gif" lazyload /></p>
 <h3 id="解构-rope-的外推失败-extrapolation-failure">1.3 解构 RoPE 的“外推失败” (Extrapolation Failure)</h3>
 <p>RoPE 的优雅设计在预训练窗口（例如 <span class="math inline"><em>L</em> = 4096</span>）内表现出色，但一旦序列长度 <span class="math inline"><em>m</em></span> 超过 <span class="math inline"><em>L</em></span>，模型的性能（以困惑度 PPL 为衡量标准）会立即出现“悬崖式下跌” (cliff-like drop)。</p>
 <p>这种失败的根源在于其位置编码方法的“有限外推能力”。这被视为一个“预测阶段的分布外 (Out-Of-Distribution, OOD) 问题”。研究发现，即使使用了 RoPE 这样的相对编码，Transformer 模型仍然会“过拟合” (overfit) 它们在训练期间看到的特定位置嵌入。此外，训练动态也加剧了这一问题：处于序列后部（rear positions）的位置嵌入在训练中被更新的频率远低于前部位置，导致它们在更长上下文中的泛化能力很差。</p>
-<figure>
-<img src="image3.webp" srcset="/img/loading.gif" lazyload alt="image3" /><figcaption aria-hidden="true">image3</figcaption>
-</figure>
+<p><img src="image3.webp" srcset="/img/loading.gif" lazyload /></p>
 <h3 id="深度洞察为什么相对的-rope-会绝对地失败">1.4 深度洞察：为什么“相对”的 RoPE 会“绝对”地失败？</h3>
 <p>RoPE 的失败常常被误解。尽管其<em>目标</em>是相对的，但其<em>实现</em>是绝对的（依赖于绝对位置 <span class="math inline"><em>m</em></span>）。失败的核心原因在于<strong>低频维度在外推时产生了 OOD 旋转角</strong>。</p>
 <p>这个失败过程可以分解如下：</p>
@@ -341,17 +334,13 @@
 <p><span class="math display"><em>g</em>(<em>m</em>) = <em>m</em>/<em>s</em></span></p>
 <p><span class="math display"><em>h</em>(<em>θ</em><sub><em>d</em></sub>) = <em>θ</em><sub><em>d</em></sub></span></p>
 <p>原始的旋转角度 <span class="math inline"><em>θ</em><sub><em>m</em>, <em>d</em></sub> = <em>m</em> ⋅ <em>θ</em><sub><em>d</em></sub></span> 被替换为 <span class="math inline"><em>θ</em><sub><em>m</em>, <em>d</em></sub>′ = (<em>m</em>/<em>s</em>) ⋅ <em>θ</em><sub><em>d</em></sub></span>。</p>
-<figure>
-<img src="image4.jpg" srcset="/img/loading.gif" lazyload alt="image4" /><figcaption aria-hidden="true">image4</figcaption>
-</figure></li>
+<p><img src="image4.jpg" srcset="/img/loading.gif" lazyload /></p></li>
 <li><p><strong>应用：</strong> LLaMA-2-7B-32K 和 Meta 自己的 Llama 2 Long 都采用了 PI 作为其上下文扩展策略。</p></li>
 <li><p><strong>优势：</strong> PI 完美地解决了 OOD 问题。通过 PI，模型<em>永远</em>不会遇到超出其训练范围 <span class="math inline">[0, <em>L</em> − 1]</span> 的位置索引。此外，它非常高效：仅需少量微调（例如 1000 步）即可将 LLaMA 的上下文从 4k 扩展到 32k ，这远比从头预训练高效得多。</p></li>
 </ul>
 <h3 id="pi-的代价高频信息的损失">2.2 PI 的代价：高频信息的损失</h3>
 <p>然而，PI 并非没有代价。它的主要缺陷在于它<em>统一</em>缩放了所有维度。PI 牺牲了位置的“分辨率”来换取“范围”。</p>
-<figure>
-<img src="image5.jpg" srcset="/img/loading.gif" lazyload alt="image5" /><figcaption aria-hidden="true">image5</figcaption>
-</figure>
+<p><img src="image5.jpg" srcset="/img/loading.gif" lazyload /></p>
 <p>这个代价的产生过程如下：</p>
 <ol type="1">
 <li>PI 将 <span class="math inline"><em>m</em></span> 替换为 <span class="math inline"><em>m</em>/<em>s</em></span>。</li>
@@ -362,14 +351,10 @@
 <li>这就是“高频信息损失” (loss of high frequency) 或“近距离 token 混淆” (confusion about positional order of close-by tokens) 的根本原因。</li>
 <li><strong>后果：</strong>经过 PI 微调的模型，虽然获得了长上下文能力，但在<em>短</em>上下文任务上的表现却会下降。</li>
 </ol>
-<figure>
-<img src="image6.jpg" srcset="/img/loading.gif" lazyload alt="image6" /><figcaption aria-hidden="true">image6</figcaption>
-</figure>
+<p><img src="image6.jpg" srcset="/img/loading.gif" lazyload /></p>
 <h3 id="解决方案二ntk-aware-缩放非线性修复">2.3 解决方案二：“NTK-aware” 缩放——“非线性”修复</h3>
 <p>“NTK-aware” 缩放的提出正是为了解决 PI 丢失高频信息的问题。该方法受到了神经切线核 (Neural Tangent Kernel, NTK) 理论的启发，NTK 理论表明高频分量对于深度神经网络的学习至关重要。</p>
-<figure>
-<img src="image7.jpg" srcset="/img/loading.gif" lazyload alt="image7" /><figcaption aria-hidden="true">image7</figcaption>
-</figure>
+<p><img src="image7.jpg" srcset="/img/loading.gif" lazyload /></p>
 <ul>
 <li><p><strong>核心思想：</strong>与其缩放位置 <span class="math inline"><em>m</em></span>，不如缩放 RoPE 的<em>基频 (base)</em> <span class="math inline"><em>b</em></span> 。</p></li>
 <li><p><strong>机理：</strong>这种缩放是<em>非线性</em>的。它旨在“分散插值压力”：对低频维度进行大幅度缩放（类似于 PI），但对高频维度<em>只进行轻微</em>缩放，从而保留它们。</p></li>
@@ -387,9 +372,7 @@
 <p>这个函数可以用一条以分组 <span class="math inline"><em>d</em></span> 为变量的经过点<span class="math inline">(0, 1)</span>与点<span class="math inline">(<em>𝐷</em>/2 − 1, <em>L</em>/<em>L</em>′)</span>的单调递减的曲线。具体曲线形式有多种，论文中使用指数函数来拟合这条曲线，得到<span class="math inline">$γ(d)=s^\frac{-2d}{D - 2}，s = L'/L$</span>。</p></li>
 </ul>
 <p>我们也可以从<strong>时钟</strong>的角度来理解。RoPE 的行为就像一个时钟，每一个 <span class="math inline"><em>θ</em></span> 值就控制着一块圆盘的转动速度，一共有 <span class="math inline"><em>d</em>/2</span> 个圆盘。</p>
-<figure>
-<img src="image8.jpg" srcset="/img/loading.gif" lazyload alt="image8" /><figcaption aria-hidden="true">image8</figcaption>
-</figure>
+<p><img src="image8.jpg" srcset="/img/loading.gif" lazyload /></p>
 <p>我们假设前三个转盘是秒针，分针和时针。12小时时钟基本上是一个维度为 3、底数为 60 的 RoPE。秒针，分针和时针是不同的频率在旋转。（频率从高到低）每秒钟，分针转动 1/60 分钟，每分钟，时针转动 1/60。现在RoPE时钟一天最大能表达：60 * 60 * 12=43200s。如果希望时钟表达的时间变长，假如想表达4天，则需要将时钟减慢4倍，那么有如下两种方法：</p>
 <ul>
 <li>PI：将每秒，分钟，时钟的频率平等的缩小4倍（周期变长），可以实现这个目标。不幸的是，现在很难区分每一秒，因为现在秒针几乎每秒都不会移动。因此，如果有人给你两个不同的时间，仅相差一秒，你将无法从远处区分它们。</li>
@@ -468,9 +451,7 @@ $$</span></p>
 </ul></li>
 </ol>
 <p>综上所述，“NTK-by-parts” 保留了 PI 的“插值”稳定性（用于低频），又获得了 NTK-aware 的“高频保留”优势（用于高频），同时规避了两者的所有缺点。</p>
-<figure>
-<img src="image9.jpg" srcset="/img/loading.gif" lazyload alt="image9" /><figcaption aria-hidden="true">image9</figcaption>
-</figure>
+<p><img src="image9.jpg" srcset="/img/loading.gif" lazyload /></p>
 <h2 id="第四部分yarn-的核心机制-ii-注意力缩放与温度调节">第四部分：YaRN 的核心机制 (II) —— 注意力缩放与温度调节</h2>
 <p>“NTK-by-parts” 解决了位置编码问题，但这只完成了 YaRN 拼图的一半 。</p>
 <h3 id="新问题长上下文中的注意力熵-entropy">4.1 新问题：长上下文中的注意力熵 (Entropy)</h3>
