@@ -77,7 +77,119 @@
 
 
   
-<meta name="generator" content="Hexo 7.3.0"></head>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 
 <body>
@@ -238,7 +350,7 @@
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/11/11/Transformer3/" target="_self">
         <div>
-          第一部分：问题的根源——RoPE 的“上下文天花板” 1.1 引言  建议先去阅读一下这篇大佬的文章：探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园，里面讲解的很清晰！本篇意在用更少的篇幅尝试讲清楚YaRN 这一解决方案！  大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂的应用至关重要，例如处理
+          第一部分：问题的根源——RoPE 的“上下文天花板” 1.1 引言  建议先去阅读一下这篇大佬的文章：探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园，里面讲解的很清晰！本篇意在用更少的篇幅尝试讲清楚**YaRN **这一解决方案！  大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂的应用
         </div>
       </a>
 
@@ -299,7 +411,7 @@
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/11/05/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB1-tpugraphs/" target="_self">
         <div>
-          论文：TpuGraphs: A Performance Prediction Dataset on Large Tensor Computational Graphs Github仓库：google-research-datasets/tpu_graphs 论文分析：
+          论文：TpuGraphs: A Performance Prediction Dataset on Large Tensor Computational Graphs Github仓库：google-research-datasets/tpu_graphs 论文分析：
         </div>
       </a>
 
@@ -425,7 +537,7 @@
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/11/03/Transformer-position-embedding1/" target="_self">
         <div>
-          第一部分：Transformer中位置信息的基础原理 1.1 自注意力机制中的置换不变性问题 Transformer架构的核心是自注意力（Self-Attention）机制，它赋予了模型强大的并行处理能力和捕捉长距离依赖的潜力。然而，这种设计也带来了一个固有的、必须被正视的局限性：置换不变性（Permutation Invariance）。从根本上说，自注意力机制将输入序列视为一个无序的标记集
+          第一部分：Transformer中位置信息的基础原理 1.1 自注意力机制中的置换不变性问题 Transformer架构的核心是自注意力（Self-Attention）机制，它赋予了模型强大的并行处理能力和捕捉长距离依赖的潜力。然而，这种设计也带来了一个固有的、必须被正视的局限性：置换不变性（Permutation Invariance）。从根本上说，自注意力机制将输入序列视为一个无序的标
         </div>
       </a>
 
@@ -486,7 +598,7 @@
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/10/27/hello-world/" target="_self">
         <div>
-          Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub. Quic
+          Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub.
         </div>
       </a>
 
