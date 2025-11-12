@@ -32,7 +32,7 @@
 <meta property="og:image" content="https://samsz04.github.io/2025/11/03/Transformer-position-embedding1/image4.png">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/03/Transformer-position-embedding1/image5.jpg">
 <meta property="article:published_time" content="2025-11-03T07:32:38.000Z">
-<meta property="article:modified_time" content="2025-11-12T04:48:02.000Z">
+<meta property="article:modified_time" content="2025-11-12T04:56:14.789Z">
 <meta property="article:author" content="Samsz">
 <meta property="article:tag" content="Transformer">
 <meta name="twitter:card" content="summary_large_image">
@@ -406,8 +406,8 @@ V）矩阵之间的点积来生成注意力分数，其公式可以简化为 <sp
 Equivariance）。</p>
 <p>这种架构特性意味着，如果没有额外的位置信息，模型将无法区分语义完全不同的句子，例如“猫坐在垫子上”和“垫子坐在猫上”。对于模型而言，这两个句子包含了完全相同的词元集合，因此自注意力机制会为它们生成相似的内部表示，这在自然语言处理任务中是不可接受的。</p>
 <p>深入分析可以发现，对位置编码的需求并非Transformer设计中的疏忽，而是其最大优势——<strong>并行化</strong>——所带来的必然结果。传统的序列模型，如循环神经网络（RNN）和长短期记忆网络（LSTM），通过其固有的循环结构来处理序列。它们一次处理一个词元，将前一个时间步的信息通过隐藏状态传递到下一个时间步，这种顺序处理的方式天然地编码了词元的位置和顺序信息。然而，这种顺序依赖性也成为了它们的瓶颈，阻碍了大规模并行计算，限制了模型在现代硬件（如GPU）上的训练效率。</p>
-<p>Transformer架构通过完全摒弃循环结构，实现了对整个输入序列的并行处理，从而极大地提升了计算效率。模型中的每个词元可以同时与所有其他词元进行交互，这使得Transformer能够高效地处理长序列。然而，正是这种架构选择，即用并行计算换取顺序处理，导致了模型失去了对序列顺序的内在感知能力。因此，<strong>位置编码（Positional
-Encoding</strong>应运而生，它是一种工程上的解决方案，旨在将至关重要的顺序信息重新注入到一个本质上是并行化的框架中。这体现了在计算效率和结构感知能力之间经典的工程权衡。</p>
+<p>Transformer架构通过完全摒弃循环结构，实现了对整个输入序列的并行处理，从而极大地提升了计算效率。模型中的每个词元可以同时与所有其他词元进行交互，这使得Transformer能够高效地处理长序列。然而，正是这种架构选择，即用并行计算换取顺序处理，导致了模型失去了对序列顺序的内在感知能力。因此，<strong>位置编码</strong>（Positional
+Encoding）应运而生，它是一种工程上的解决方案，旨在将至关重要的顺序信息重新注入到一个本质上是并行化的框架中。这体现了在计算效率和结构感知能力之间经典的工程权衡。</p>
 <p><img src="image1.jpg" srcset="/img/loading.gif" lazyload></p>
 <h3 id="12-位置编码策略分类">1.2 位置编码策略分类</h3>
 <p>为了解决自注意力机制的置换不变性问题，研究者们开发了多种策略来为模型提供位置信息。这些策略可以大致分为<strong>三个主要类别</strong>，为理解后续更高级的技术（如RoPE）提供了清晰的框架。</p>
