@@ -19,12 +19,12 @@
   <meta name="author" content="Samsz">
   <meta name="keywords" content="Transformer,Positional Embedding,RoPE">
   
-    <meta name="description" content="第一部分：深入解析旋转位置编码（RoPE） 旋转位置编码（RoPE）代表了位置编码领域的一次范式转移，它通过一种新颖的几何视角统一了绝对位置编码和相对位置编码。自提出以来，RoPE因其优越的性能和良好的理论特性，迅速成为众多先进大语言模型（如Llama、PaLM、Qwen）的标准配置。  1.1 概念框架：通过旋转编码位置 RoPE的核心思想极其直观且优雅：它不再通过向量加法来注入位置信息，而是通">
+    <meta name="description" content="第一部分：深入解析旋转位置编码（RoPE） 旋转位置编码（RoPE）代表了位置编码领域的一次范式转移，它通过一种新颖的几何视角统一了绝对位置编码和相对位置编码。自提出以来，RoPE因其优越的性能和良好的理论特性，迅速成为众多先进大语言模型（如Llama、PaLM、Qwen）的标准配置。  1.1 概念框架：通过旋转编码位置 RoPE的核心思想极其直观且优雅：它不再通过向量加法来注入位置信息">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Transformer位置编码(2)——RoPE">
 <meta property="og:url" content="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/index.html">
 <meta property="og:site_name" content="SamSz04&#39;s Blog">
-<meta property="og:description" content="第一部分：深入解析旋转位置编码（RoPE） 旋转位置编码（RoPE）代表了位置编码领域的一次范式转移，它通过一种新颖的几何视角统一了绝对位置编码和相对位置编码。自提出以来，RoPE因其优越的性能和良好的理论特性，迅速成为众多先进大语言模型（如Llama、PaLM、Qwen）的标准配置。  1.1 概念框架：通过旋转编码位置 RoPE的核心思想极其直观且优雅：它不再通过向量加法来注入位置信息，而是通">
+<meta property="og:description" content="第一部分：深入解析旋转位置编码（RoPE） 旋转位置编码（RoPE）代表了位置编码领域的一次范式转移，它通过一种新颖的几何视角统一了绝对位置编码和相对位置编码。自提出以来，RoPE因其优越的性能和良好的理论特性，迅速成为众多先进大语言模型（如Llama、PaLM、Qwen）的标准配置。  1.1 概念框架：通过旋转编码位置 RoPE的核心思想极其直观且优雅：它不再通过向量加法来注入位置信息">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/image1.png">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/image2.png">
@@ -34,7 +34,7 @@
 <meta property="og:image" content="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/image6.webp">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/image7.jpg">
 <meta property="article:published_time" content="2025-11-04T06:38:41.000Z">
-<meta property="article:modified_time" content="2025-11-12T02:43:22.554Z">
+<meta property="article:modified_time" content="2025-11-12T02:48:53.037Z">
 <meta property="article:author" content="Samsz">
 <meta property="article:tag" content="Transformer">
 <meta name="twitter:card" content="summary_large_image">
@@ -53,8 +53,6 @@
   <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
-
-  <link  rel="stylesheet" href="https://lib.baomitu.com/KaTeX/0.16.2/katex.min.css" />
 
 
 
@@ -244,7 +242,7 @@
         
         
         
-          43 分钟
+          42 分钟
         
       </span>
     
@@ -286,86 +284,72 @@
             
               <div class="markdown-body">
                 
-                <h2 id="第一部分：深入解析旋转位置编码（RoPE）">第一部分：深入解析旋转位置编码（RoPE）</h2>
+                <h2 id="第一部分深入解析旋转位置编码rope">第一部分：深入解析旋转位置编码（RoPE）</h2>
 <p>旋转位置编码（RoPE）代表了位置编码领域的一次范式转移，它通过一种新颖的<strong>几何视角</strong>统一了绝对位置编码和相对位置编码。自提出以来，RoPE因其优越的性能和良好的理论特性，迅速成为众多先进大语言模型（如Llama、PaLM、Qwen）的标准配置。</p>
-<p><img src="image1.png" srcset="/img/loading.gif" lazyload alt=""></p>
-<h3 id="1-1-概念框架：通过旋转编码位置">1.1 概念框架：通过旋转编码位置</h3>
-<p>RoPE的<strong>核心思想</strong>极其直观且优雅：它不再通过向量加法来注入位置信息，而是通过<strong>旋转</strong>查询（Q）和键（K）向量来实现。<strong>每个词元在序列中的绝对位置 $m$ 对应一个特定的旋转角度</strong>。当Q和K向量根据它们各自的绝对位置 $m$ 和 $n$ 进行旋转后，它们之间的点积（即注意力分数的核心部分）将<strong>只依赖于它们的相对位置 $m-n$</strong>。</p>
-<p><img src="image2.png" srcset="/img/loading.gif" lazyload alt=""></p>
-<p><img src="image3.webp" srcset="/img/loading.gif" lazyload alt=""></p>
+<p><img src="image1.png" srcset="/img/loading.gif" lazyload /></p>
+<h3 id="概念框架通过旋转编码位置">1.1 概念框架：通过旋转编码位置</h3>
+<p>RoPE的<strong>核心思想</strong>极其直观且优雅：它不再通过向量加法来注入位置信息，而是通过<strong>旋转</strong>查询（Q）和键（K）向量来实现。<strong>每个词元在序列中的绝对位置 <span class="math inline"><em>m</em></span> 对应一个特定的旋转角度</strong>。当Q和K向量根据它们各自的绝对位置 <span class="math inline"><em>m</em></span> 和 <span class="math inline"><em>n</em></span> 进行旋转后，它们之间的点积（即注意力分数的核心部分）将<strong>只依赖于它们的相对位置 <span class="math inline"><em>m</em> − <em>n</em></span></strong>。</p>
+<p><img src="image2.png" srcset="/img/loading.gif" lazyload /></p>
+<p><img src="image3.webp" srcset="/img/loading.gif" lazyload /></p>
 <p>我们可以借助一个“时钟”的比喻来理解这个过程：</p>
-<ol>
-<li><strong>多指针时钟</strong>：将一个 $d$ 维的嵌入向量看作由 $d/2$ 个<strong>二维平面</strong>上的指针（或复数）组成。<strong>每个指针代表一个维度对</strong>。</li>
-<li><strong>不同的转速</strong>：每个指针（维度对）都**以自己独特的速度（频率）**旋转。低维度的指针转得快，高维度的指针转得慢。</li>
-<li><strong>位置即角度</strong>：<strong>一个词元的绝对位置 $m$ 决定了所有指针需要旋转的角度</strong>。具体来说，第 $i$ 个指针的旋转角度是 $m \cdot \theta_i$，其中 $\theta_i$ 是该指针固有的转速。</li>
-<li><strong>相对位置的体现</strong>：当计算位置为 $m$ 的查询和位置为 $n$ 的键之间的注意力时，我们实际上是在比较这两个“时钟”状态。由于<strong>点积运算对旋转具有不变性</strong>（两个向量一起旋转相同的角度，它们的点积不变），最终的计算结果只取决于两个时钟指针之间的<strong>角度差</strong>，这个差值正比于相对距离 $m-n$。</li>
+<ol type="1">
+<li><strong>多指针时钟</strong>：将一个 <span class="math inline"><em>d</em></span> 维的嵌入向量看作由 <span class="math inline"><em>d</em>/2</span> 个<strong>二维平面</strong>上的指针（或复数）组成。<strong>每个指针代表一个维度对</strong>。</li>
+<li><strong>不同的转速</strong>：每个指针（维度对）都<strong>以自己独特的速度（频率）</strong>旋转。低维度的指针转得快，高维度的指针转得慢。</li>
+<li><strong>位置即角度</strong>：<strong>一个词元的绝对位置 <span class="math inline"><em>m</em></span> 决定了所有指针需要旋转的角度</strong>。具体来说，第 <span class="math inline"><em>i</em></span> 个指针的旋转角度是 <span class="math inline"><em>m</em> ⋅ <em>θ</em><sub><em>i</em></sub></span>，其中 <span class="math inline"><em>θ</em><sub><em>i</em></sub></span> 是该指针固有的转速。</li>
+<li><strong>相对位置的体现</strong>：当计算位置为 <span class="math inline"><em>m</em></span> 的查询和位置为 <span class="math inline"><em>n</em></span> 的键之间的注意力时，我们实际上是在比较这两个“时钟”状态。由于<strong>点积运算对旋转具有不变性</strong>（两个向量一起旋转相同的角度，它们的点积不变），最终的计算结果只取决于两个时钟指针之间的<strong>角度差</strong>，这个差值正比于相对距离 <span class="math inline"><em>m</em> − <em>n</em></span>。</li>
 </ol>
-<p><img src="image4.png" srcset="/img/loading.gif" lazyload alt=""></p>
+<p><img src="image4.png" srcset="/img/loading.gif" lazyload /></p>
 <p>这种多尺度的旋转机制是RoPE成功的关键。快速旋转的指针（低维，高频）能够精确地区分邻近的位置，为模型提供细粒度的局部信息。而缓慢旋转的指针（高维，低频）则能在很长的距离上保持独特的角度，从而为模型提供捕捉远距离依赖所需的粗粒度全局信息。这种设计避免了单一频率可能导致的“混叠”问题，即在某个周期后，不同位置的旋转状态变得无法区分。</p>
-<h3 id="1-2-数学公式与推导">1.2 数学公式与推导</h3>
-<p>为了严谨地理解RoPE，我们需要深入其数学推导。其目标是找到一个编码函数 $f(\mathbf{x}, m)$，它作用于词元嵌入 $\mathbf{x}$ 和其绝对位置 $m$，使得编码后的查询 $f(\mathbf{q}, m)$ 和键 $f(\mathbf{k}, n)$ 的内积<strong>只与</strong> $\mathbf{q}$、$\mathbf{k}$ 以及它们的相对位置 $m-n$ 有关：<br>
-$$<br>
-\langle f(\mathbf{q}, m), f(\mathbf{k}, n) \rangle = g(\mathbf{q}, \mathbf{k}, m-n)<br>
-$$<br>
-最简洁的推导方式是借助复数。我们可以将一个 $d$ 维的实数向量 $\mathbf{x} \in \mathbb{R}^d$ 视为一个 $d/2$ 维的复数向量 $\mathbf{x} \in \mathbb{C}^{d/2}$，其中每两个连续的实数分量 $(x_{2i}, x_{2i+1})$ 组成一个复数 $x_i = x_{2i} + j \cdot x_{2i+1}$ 。</p>
-<p>在复数域中，旋转可以通过乘以一个模为1的复数 $e^{j\theta}$ 来实现。我们定义编码函数为：</p>
-<p>$$<br>
-f(\mathbf{x}, m) = \mathbf{x} \odot e^{jm\mathbf{\theta}}<br>
-$$<br>
-其中 $\odot$ 表示逐元素相乘，$\mathbf{\theta} = [\theta_1, \theta_2, \dots, \theta_{d/2}]$ 是一个包含不同旋转频率的向量。</p>
-<p>现在，我们来计算编码后的查询和键的内积（在复数域中，内积定义为 $\langle a, b \rangle = a \cdot \bar{b}$，其中 $\bar{b}$ 是 $b$ 的共轭）：<br>
-$$<br>
-\begin{align*}<br>
-\langle f(\mathbf{q}, m), f(\mathbf{k}, n) \rangle<br>
-&amp;= \operatorname{Re}\big( (\mathbf{q}\odot e^{jm\boldsymbol{\theta}})\cdot\overline{(\mathbf{k}\odot e^{jn\boldsymbol{\theta}})} \big) \<br>
-&amp;= \operatorname{Re}\big( (\mathbf{q}\odot e^{jm\boldsymbol{\theta}})\cdot(\overline{\mathbf{k}}\odot e^{-jn\boldsymbol{\theta}}) \big) \<br>
-&amp;= \operatorname{Re}\big( (\mathbf{q}\cdot\overline{\mathbf{k}})\odot e^{j(m-n)\boldsymbol{\theta}} \big)<br>
-\end{align*}<br>
-$$<br>
-从最后的结果可以看出，内积的表达式中只包含了相对位置 $m-n$，而绝对位置 $m$ 和 $n$ 被完美地消除了。</p>
-<p>将这个思想转换回实数域，对于向量中的每一对维度 $(x_{2i}, x_{2i+1})$，<strong>上述复数乘法等价于乘以一个2D旋转矩阵</strong>：<br>
-$$<br>
-\begin{pmatrix} x’<em>{2i} \ x’</em>{2i+1} \end{pmatrix} =<br>
-\begin{pmatrix} \cos(m\theta_i) &amp; -\sin(m\theta_i) \ \sin(m\theta_i) &amp; \cos(m\theta_i) \end{pmatrix}<br>
-\begin{pmatrix} x_{2i} \ x_{2i+1} \end{pmatrix}<br>
-$$<br>
-对于整个 $d$ 维向量，这个操作<strong>相当于左乘一个块对角矩阵</strong>，其中<strong>每个对角块都是一个2D旋转矩阵</strong>。</p>
-<p><img src="image5.webp" srcset="/img/loading.gif" lazyload alt=""></p>
-<p><img src="image6.webp" srcset="/img/loading.gif" lazyload alt=""></p>
-<p>旋转的频率 $\theta_i$ 通常按照以下公式定义：<br>
-$$<br>
-\theta_i = \text{base}^{-2(i-1)/d}<br>
-$$<br>
-其中 $d$ 是嵌入维度中用于RoPE的部分（通常是每个注意力头的维度），而 $\text{base}$ 是一个超参数，原始论文中设为10000。这个公式确保了频率 $\theta_i$ 随着维度索引 $i$ 的增加而几何递减，从而实现了前文所述的<strong>多尺度“时钟”效果</strong>。</p>
-<h3 id="1-3-RoPE的关键特性与理论优势">1.3 RoPE的关键特性与理论优势</h3>
+<h3 id="数学公式与推导">1.2 数学公式与推导</h3>
+<p>为了严谨地理解RoPE，我们需要深入其数学推导。其目标是找到一个编码函数 <span class="math inline"><em>f</em>(<strong>x</strong>, <em>m</em>)</span>，它作用于词元嵌入 <span class="math inline"><strong>x</strong></span> 和其绝对位置 <span class="math inline"><em>m</em></span>，使得编码后的查询 <span class="math inline"><em>f</em>(<strong>q</strong>, <em>m</em>)</span> 和键 <span class="math inline"><em>f</em>(<strong>k</strong>, <em>n</em>)</span> 的内积<strong>只与</strong> <span class="math inline"><strong>q</strong></span>、<span class="math inline"><strong>k</strong></span> 以及它们的相对位置 <span class="math inline"><em>m</em> − <em>n</em></span> 有关： <span class="math display">⟨<em>f</em>(<strong>q</strong>, <em>m</em>), <em>f</em>(<strong>k</strong>, <em>n</em>)⟩ = <em>g</em>(<strong>q</strong>, <strong>k</strong>, <em>m</em> − <em>n</em>)</span> 最简洁的推导方式是借助复数。我们可以将一个 <span class="math inline"><em>d</em></span> 维的实数向量 <span class="math inline"><strong>x</strong> ∈ ℝ<sup><em>d</em></sup></span> 视为一个 <span class="math inline"><em>d</em>/2</span> 维的复数向量 <span class="math inline"><strong>x</strong> ∈ ℂ<sup><em>d</em>/2</sup></span>，其中每两个连续的实数分量 <span class="math inline">(<em>x</em><sub>2<em>i</em></sub>, <em>x</em><sub>2<em>i</em> + 1</sub>)</span> 组成一个复数 <span class="math inline"><em>x</em><sub><em>i</em></sub> = <em>x</em><sub>2<em>i</em></sub> + <em>j</em> ⋅ <em>x</em><sub>2<em>i</em> + 1</sub></span> 。</p>
+<p>在复数域中，旋转可以通过乘以一个模为1的复数 <span class="math inline"><em>e</em><sup><em>j</em><em>θ</em></sup></span> 来实现。我们定义编码函数为：</p>
+<p><span class="math display"><em>f</em>(<strong>x</strong>, <em>m</em>) = <strong>x</strong> ⊙ <em>e</em><sup><em>j</em><em>m</em><strong>θ</strong></sup></span> 其中 <span class="math inline">⊙</span> 表示逐元素相乘，<span class="math inline"><strong>θ</strong> = [<em>θ</em><sub>1</sub>, <em>θ</em><sub>2</sub>, …, <em>θ</em><sub><em>d</em>/2</sub>]</span> 是一个包含不同旋转频率的向量。</p>
+<p>现在，我们来计算编码后的查询和键的内积（在复数域中，内积定义为 <span class="math inline">⟨<em>a</em>, <em>b</em>⟩ = <em>a</em> ⋅ <em>b̄</em></span>，其中 <span class="math inline"><em>b̄</em></span> 是 <span class="math inline"><em>b</em></span> 的共轭）： <span class="math display">$$
+\begin{align*}
+\langle f(\mathbf{q}, m), f(\mathbf{k}, n) \rangle
+&amp;= \operatorname{Re}\big( (\mathbf{q}\odot e^{jm\boldsymbol{\theta}})\cdot\overline{(\mathbf{k}\odot e^{jn\boldsymbol{\theta}})} \big) \\
+&amp;= \operatorname{Re}\big( (\mathbf{q}\odot e^{jm\boldsymbol{\theta}})\cdot(\overline{\mathbf{k}}\odot e^{-jn\boldsymbol{\theta}}) \big) \\
+&amp;= \operatorname{Re}\big( (\mathbf{q}\cdot\overline{\mathbf{k}})\odot e^{j(m-n)\boldsymbol{\theta}} \big)
+\end{align*}
+$$</span> 从最后的结果可以看出，内积的表达式中只包含了相对位置 <span class="math inline"><em>m</em> − <em>n</em></span>，而绝对位置 <span class="math inline"><em>m</em></span> 和 <span class="math inline"><em>n</em></span> 被完美地消除了。</p>
+<p>将这个思想转换回实数域，对于向量中的每一对维度 <span class="math inline">(<em>x</em><sub>2<em>i</em></sub>, <em>x</em><sub>2<em>i</em> + 1</sub>)</span>，<strong>上述复数乘法等价于乘以一个2D旋转矩阵</strong>： <span class="math display">$$
+\begin{pmatrix} x'_{2i} \\ x'_{2i+1} \end{pmatrix} = 
+\begin{pmatrix} \cos(m\theta_i) &amp; -\sin(m\theta_i) \\ \sin(m\theta_i) &amp; \cos(m\theta_i) \end{pmatrix} 
+\begin{pmatrix} x_{2i} \\ x_{2i+1} \end{pmatrix}
+$$</span> 对于整个 <span class="math inline"><em>d</em></span> 维向量，这个操作<strong>相当于左乘一个块对角矩阵</strong>，其中<strong>每个对角块都是一个2D旋转矩阵</strong>。</p>
+<p><img src="image5.webp" srcset="/img/loading.gif" lazyload /></p>
+<p><img src="image6.webp" srcset="/img/loading.gif" lazyload /></p>
+<p>旋转的频率 <span class="math inline"><em>θ</em><sub><em>i</em></sub></span> 通常按照以下公式定义： <span class="math display"><em>θ</em><sub><em>i</em></sub> = base<sup> − 2(<em>i</em> − 1)/<em>d</em></sup></span> 其中 <span class="math inline"><em>d</em></span> 是嵌入维度中用于RoPE的部分（通常是每个注意力头的维度），而 <span class="math inline">base</span> 是一个超参数，原始论文中设为10000。这个公式确保了频率 <span class="math inline"><em>θ</em><sub><em>i</em></sub></span> 随着维度索引 <span class="math inline"><em>i</em></span> 的增加而几何递减，从而实现了前文所述的<strong>多尺度“时钟”效果</strong>。</p>
+<h3 id="rope的关键特性与理论优势">1.3 RoPE的关键特性与理论优势</h3>
 <p>RoPE之所以被广泛采用，得益于其几个核心的理论优势：</p>
-<ol>
+<ol type="1">
 <li><strong>序列长度的灵活性</strong>：由于RoPE在注意力计算中有效地编码了相对位置，它对序列长度具有很强的泛化能力。模型在较短序列上训练后，可以直接应用于更长的序列，而不会像某些绝对位置编码方法那样出现性能急剧下降的情况。</li>
-<li><strong>远程依赖的衰减特性</strong>：从数学上可以证明，经过RoPE旋转后的两个向量，它们的内积会随着相对距离 $|m-n|$ 的增大而衰减。这为模型提供了一个非常有用的归纳偏置：<strong>距离越近的词元通常关系越密切，注意力得分应该越高；反之，距离越远的词元关系可能越弱</strong>。</li>
+<li><strong>远程依赖的衰减特性</strong>：从数学上可以证明，经过RoPE旋转后的两个向量，它们的内积会随着相对距离 <span class="math inline">|<em>m</em> − <em>n</em>|</span> 的增大而衰减。这为模型提供了一个非常有用的归纳偏置：<strong>距离越近的词元通常关系越密切，注意力得分应该越高；反之，距离越远的词元关系可能越弱</strong>。</li>
 <li><strong>与线性注意力的兼容性</strong>：这是RoPE相较于传统RPE的一个决定性优势。因为RoPE是对Q和K向量的独立预处理，它发生在点积注意力计算之前。这意味着它与任何旨在避免计算完整注意力矩阵的线性注意力或高效注意力机制都是<strong>完全兼容</strong>的。这使得RoPE能够应用于对计算效率要求极高的超长序列模型中。</li>
 </ol>
-<h3 id="1-4-现代大语言模型中的RoPE分析：以Llama-3的rope-theta为例">1.4 现代大语言模型中的RoPE分析：以Llama 3的<code>rope_theta</code>为例</h3>
+<h3 id="现代大语言模型中的rope分析以llama-3的rope_theta为例">1.4 现代大语言模型中的RoPE分析：以Llama 3的<code>rope_theta</code>为例</h3>
 <p>理论的优雅需要通过实践来验证和优化。RoPE在现代大语言模型中的应用，特别是Llama 3系列模型的实现，为我们提供了一个绝佳的案例，展示了理论属性如何根据实际需求被调整。</p>
-<p>在Llama 3的配置文件中，一个关键的超参数<code>rope_theta</code>被设置为500000.0，远大于原始RoPE论文中使用的10000.0。这个参数正是前文频率公式中的$\text{base}$项。</p>
-<p>这一调整并非无心之举，它深刻地改变了RoPE的行为。增大<code>rope_theta</code>的值，会使得所有的旋转频率 $\theta_i$ 变小。换言之，它让所有维度的“时钟指针”都转得更慢了。其直接后果是，RoPE固有的“远程依赖衰减”特性被显著减弱。当旋转角度随位置增长得更慢时，<strong>即使相对距离 $|m-n|$ 很大，旋转带来的相位差也较小，从而使得内积（注意力分数）的衰减变得平缓</strong>。</p>
+<p>在Llama 3的配置文件中，一个关键的超参数<code>rope_theta</code>被设置为500000.0，远大于原始RoPE论文中使用的10000.0。这个参数正是前文频率公式中的<span class="math inline">base</span>项。</p>
+<p>这一调整并非无心之举，它深刻地改变了RoPE的行为。增大<code>rope_theta</code>的值，会使得所有的旋转频率 <span class="math inline"><em>θ</em><sub><em>i</em></sub></span> 变小。换言之，它让所有维度的“时钟指针”都转得更慢了。其直接后果是，RoPE固有的“远程依赖衰减”特性被显著减弱。当旋转角度随位置增长得更慢时，<strong>即使相对距离 <span class="math inline">|<em>m</em> − <em>n</em>|</span> 很大，旋转带来的相位差也较小，从而使得内积（注意力分数）的衰减变得平缓</strong>。</p>
 <p>这一改动背后的动机是显而易见的。随着大模型竞赛进入“长上下文”时代，模型需要处理越来越长的文档、代码库或对话历史。在这些场景下，<strong>相距非常遥远的两个词元之间可能存在着至关重要的联系（例如，“大海捞针”测试）。在这种情况下，RoPE原始的快速衰减特性反而成了一种阻碍，因为它会惩罚模型对远距离信息的关注</strong>。</p>
 <p>因此，Llama 3的工程师们通过调整<code>rope_theta</code>这一简单的杠杆，有原则地修改了模型的归纳偏置，使其更适应长上下文推理的任务。这完美地说明了RoPE的特性既是其优点，也是一个可调节的参数。理论上被认为是“理想属性”的远程衰减，在新的应用需求下，可以被灵活地调整甚至抑制。这突显了在最先进的模型开发中，深刻的理论理解与务实的工程决策之间相辅相成的关系。</p>
-<h2 id="第二部分：将RoPE扩展至多模态环境">第二部分：将RoPE扩展至多模态环境</h2>
+<h2 id="第二部分将rope扩展至多模态环境">第二部分：将RoPE扩展至多模态环境</h2>
 <p>RoPE在处理一维文本序列方面取得了巨大成功，但真实世界的信息远不止于此。图像、视频等多模态数据具有更复杂的结构，这对位置编码提出了新的挑战。<strong>将RoPE从一维扩展到多维是构建像Qwen3-VL这样的高级视觉语言模型的关键一步</strong>。</p>
-<h3 id="2-1-多维度的挑战：从一维文本到二维视觉">2.1 多维度的挑战：从一维文本到二维视觉</h3>
+<h3 id="多维度的挑战从一维文本到二维视觉">2.1 多维度的挑战：从一维文本到二维视觉</h3>
 <p>文本本质上是一维序列，而图像是二维的空间结构，<strong>视频则是在二维空间基础上增加了第三个维度——时间</strong>。简单地将图像分割成块（patches）然后展平成一个一维序列，虽然是Vision Transformer（ViT）的初始做法，但这种方式会丢失关键的几何信息。模型将无法理解“上方”、“左侧”或“右下角”等基本的空间关系，这对于需要细粒度视觉理解的任务（如目标检测、文档布局分析）是致命的。</p>
-<p>因此，一个适用于多模态数据的位置编码方案，必须能够同时处理多个坐标轴（例如，时间 $t$、高度 $h$、宽度 $w$），并让模型理解这些维度上的相对关系。</p>
-<h3 id="2-2-多模态RoPE（M-RoPE）：位置设计与频率分配">2.2 多模态RoPE（M-RoPE）：位置设计与频率分配</h3>
-<p>为了将RoPE扩展到多维，研究者们提出了多模态RoPE（M-RoPE）的概念。其核心思想是为每个维度（如 $t, h, w$）应用独立的旋转。然而，这一看似简单的扩展引入了两个关键且复杂的设计抉择：</p>
-<ol>
-<li><strong>位置设计（Position Design）</strong>：如何为文本和视觉（图像/视频帧）词元分配多维坐标 $(t, h, w)$。一个好的设计必须能够明确区分不同模态的词元，并避免位置歧义。例如，一些早期方案可能会导致视觉词元和后续生成的文本词元拥有重叠的坐标，造成“模态混淆”。</li>
-<li><strong>频率分配（Frequency Allocation）</strong>：如何将模型的嵌入维度（例如，一个注意力头的128维）分配给不同的坐标轴（$t, h, w$）来计算旋转。这是M-RoPE实现中最具挑战性也最关键的一环。</li>
+<p>因此，一个适用于多模态数据的位置编码方案，必须能够同时处理多个坐标轴（例如，时间 <span class="math inline"><em>t</em></span>、高度 <span class="math inline"><em>h</em></span>、宽度 <span class="math inline"><em>w</em></span>），并让模型理解这些维度上的相对关系。</p>
+<h3 id="多模态ropem-rope位置设计与频率分配">2.2 多模态RoPE（M-RoPE）：位置设计与频率分配</h3>
+<p>为了将RoPE扩展到多维，研究者们提出了多模态RoPE（M-RoPE）的概念。其核心思想是为每个维度（如 <span class="math inline"><em>t</em>, <em>h</em>, <em>w</em></span>）应用独立的旋转。然而，这一看似简单的扩展引入了两个关键且复杂的设计抉择：</p>
+<ol type="1">
+<li><strong>位置设计（Position Design）</strong>：如何为文本和视觉（图像/视频帧）词元分配多维坐标 <span class="math inline">(<em>t</em>, <em>h</em>, <em>w</em>)</span>。一个好的设计必须能够明确区分不同模态的词元，并避免位置歧义。例如，一些早期方案可能会导致视觉词元和后续生成的文本词元拥有重叠的坐标，造成“模态混淆”。</li>
+<li><strong>频率分配（Frequency Allocation）</strong>：如何将模型的嵌入维度（例如，一个注意力头的128维）分配给不同的坐标轴（<span class="math inline"><em>t</em>, <em>h</em>, <em>w</em></span>）来计算旋转。这是M-RoPE实现中最具挑战性也最关键的一环。</li>
 </ol>
-<p>一种直接的频率分配策略是**“分块式”（Blocked）<strong>分配。例如，对于一个128维的向量，可以将前42维分配给时间轴 $t$，接下来的43维分配给高度轴 $h$，最后43维分配给宽度轴 $w$。每个轴在其分配到的维度块内，独立地应用从高到低的旋转频率。这种方法虽然简单，但存在严重缺陷：<strong>它迫使某些轴（在这个例子中是时间轴 $t$）只能使用高频旋转</strong>，而其他轴只能使用中低频旋转。高频旋转意味着注意力会随着距离的增加而迅速衰减，这对于需要</strong>捕捉长时序关系的视频理解任务<strong>是极其不利的。同时，不同轴使用</strong>不对称**的频率范围也可能引入不必要的偏见。</p>
+<p>一种直接的频率分配策略是<strong>“分块式”（Blocked）</strong>分配。例如，对于一个128维的向量，可以将前42维分配给时间轴 <span class="math inline"><em>t</em></span>，接下来的43维分配给高度轴 <span class="math inline"><em>h</em></span>，最后43维分配给宽度轴 <span class="math inline"><em>w</em></span>。每个轴在其分配到的维度块内，独立地应用从高到低的旋转频率。这种方法虽然简单，但存在严重缺陷：<strong>它迫使某些轴（在这个例子中是时间轴 <span class="math inline"><em>t</em></span>）只能使用高频旋转</strong>，而其他轴只能使用中低频旋转。高频旋转意味着注意力会随着距离的增加而迅速衰减，这对于需要<strong>捕捉长时序关系的视频理解任务</strong>是极其不利的。同时，不同轴使用<strong>不对称</strong>的频率范围也可能引入不必要的偏见。</p>
 <p>下表对比了不同的M-RoPE设计策略，系统地展示了它们各自的局限性，并为理解Qwen3-VL所采用的“交错式”方案的动机提供了背景。</p>
 <table>
+
 <thead>
-<tr>
+<tr class="header">
 <th><strong>设计变体</strong></th>
 <th><strong>位置分配策略</strong></th>
 <th><strong>频率分配策略</strong></th>
@@ -373,25 +357,25 @@ $$<br>
 </tr>
 </thead>
 <tbody>
-<tr>
+<tr class="odd">
 <td><strong>一维序列化</strong></td>
 <td>将所有词元展平为一维序列</td>
 <td>所有维度用于单一轴</td>
 <td>丢失2D/3D几何结构，空间推理能力差</td>
 </tr>
-<tr>
+<tr class="even">
 <td><strong>MRoPE (分块式)</strong></td>
 <td>为视觉词元分配3D坐标</td>
 <td>将嵌入维度<strong>分块</strong>分配给t, h, w轴</td>
 <td>频率分配不均，导致某些轴（如时间）注意力快速衰减，不利于长时序建模</td>
 </tr>
-<tr>
+<tr class="odd">
 <td><strong>VideoRoPE (对角线布局)</strong></td>
 <td>对角线式分配位置ID</td>
 <td>将时间轴分配给低频维度</td>
 <td>可能导致视觉和文本词元位置重叠，引发模态混淆</td>
 </tr>
-<tr>
+<tr class="even">
 <td><strong>Interleaved-MRoPE (交错式)</strong></td>
 <td>为视觉词元分配3D坐标</td>
 <td>将嵌入维度<strong>交错</strong>分配给t, h, w轴</td>
@@ -399,34 +383,34 @@ $$<br>
 </tr>
 </tbody>
 </table>
-<h3 id="2-3-交错式RoPE变体：频率分配的范式转变">2.3 交错式RoPE变体：频率分配的范式转变</h3>
-<p><img src="image7.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
-<p>为了克服分块式分配的缺陷，一种更先进的策略——**“交错式”（Interleaved）**频率分配——被提出并应用于Qwen3-VL等模型中。</p>
-<p>交错式分配的核心思想是，不再将连续的维度块分配给单个轴，而是在所有轴之间以<strong>轮询（round-robin）的方式</strong>交错分配维度。以一个三维坐标 $(t, h, w)$ 为例，分配方式可能如下：</p>
+<h3 id="交错式rope变体频率分配的范式转变">2.3 交错式RoPE变体：频率分配的范式转变</h3>
+<p><img src="image7.jpg" srcset="/img/loading.gif" lazyload /></p>
+<p>为了克服分块式分配的缺陷，一种更先进的策略——<strong>“交错式”（Interleaved）</strong>频率分配——被提出并应用于Qwen3-VL等模型中。</p>
+<p>交错式分配的核心思想是，不再将连续的维度块分配给单个轴，而是在所有轴之间以<strong>轮询（round-robin）的方式</strong>交错分配维度。以一个三维坐标 <span class="math inline">(<em>t</em>, <em>h</em>, <em>w</em>)</span> 为例，分配方式可能如下：</p>
 <ul>
-<li>维度对0分配给时间轴 $t$</li>
-<li>维度对1分配给高度轴 $h$</li>
-<li>维度对2分配给宽度轴 $w$</li>
-<li>维度对3分配给时间轴 $t$</li>
-<li>维度对4分配给高度轴 $h$</li>
+<li>维度对0分配给时间轴 <span class="math inline"><em>t</em></span></li>
+<li>维度对1分配给高度轴 <span class="math inline"><em>h</em></span></li>
+<li>维度对2分配给宽度轴 <span class="math inline"><em>w</em></span></li>
+<li>维度对3分配给时间轴 <span class="math inline"><em>t</em></span></li>
+<li>维度对4分配给高度轴 <span class="math inline"><em>h</em></span></li>
 <li>… 以此类推</li>
 </ul>
-<p>通过这种方式，<strong>每一个坐标轴（$t, h, w$）都能获得从最高到最低的完整频率谱</strong>。时间轴 $t$ 不再局限于高频维度，它同样可以使用低频维度来进行缓慢旋转，从而有效捕捉长距离的时间依赖。同理，<strong>空间轴 $h$ 和 $w$ 也能利用高频维度来感知局部细节，利用低频维度来理解全局布局</strong>。</p>
+<p>通过这种方式，<strong>每一个坐标轴（<span class="math inline"><em>t</em>, <em>h</em>, <em>w</em></span>）都能获得从最高到最低的完整频率谱</strong>。时间轴 <span class="math inline"><em>t</em></span> 不再局限于高频维度，它同样可以使用低频维度来进行缓慢旋转，从而有效捕捉长距离的时间依赖。同理，<strong>空间轴 <span class="math inline"><em>h</em></span> 和 <span class="math inline"><em>w</em></span> 也能利用高频维度来感知局部细节，利用低频维度来理解全局布局</strong>。</p>
 <p>这种方法从根本上解决了分块式分配导致的注意力快速衰减和不对称衰减的问题，为所有维度提供了均衡且鲁棒的多尺度建模能力。这种实现模式在一些底层算子库中也有体现，例如ONNX的<code>RotaryEmbedding</code>算子就提供了一个<code>interleaved</code>属性来支持这种计算模式，这表明它是一种被业界认可的高效实现方案。</p>
-<h2 id="第三部分：解构Qwen3-VL架构中的RoPE">第三部分：解构Qwen3-VL架构中的RoPE</h2>
+<h2 id="第三部分解构qwen3-vl架构中的rope">第三部分：解构Qwen3-VL架构中的RoPE</h2>
 <p>本部分将综合前述所有理论知识，对目标模型Qwen3-VL中的RoPE实现进行一次集中的、深入的分析。我们将追溯其在Qwen系列中的演进，并详细剖析其“交错式M-RoPE”的具体实现及其对模型性能的深远影响。</p>
-<h3 id="3-1-Qwen-VL系列中位置编码的架构概览">3.1 Qwen-VL系列中位置编码的架构概览</h3>
+<h3 id="qwen-vl系列中位置编码的架构概览">3.1 Qwen-VL系列中位置编码的架构概览</h3>
 <p>Qwen（通义千问）系列模型在位置编码的选择上经历了一个清晰的演进过程，反映了该领域技术发展的趋势。早期的Qwen-VL模型，在其视觉-语言适配器中采用了二维绝对位置编码来保留图像特征的位置信息，这是一种相对传统和直接的方法。然而，随着模型向更复杂的时空理解能力发展，后续的模型版本，特别是Qwen2-VL和Qwen3-VL，转向了更先进的RoPE方案，并专门为其多模态特性设计了M-RoPE。这一转变标志着模型设计从简单的位置注入转向了通过几何变换来编码复杂的相对关系，旨在获得更强的泛化和外推能力。</p>
-<h3 id="3-2-Qwen3-VL中的交错式M-RoPE实现">3.2 Qwen3-VL中的交错式M-RoPE实现</h3>
-<p>Qwen3-VL模型架构的一项核心更新，被官方明确描述为**“增强的、采用交错式布局的MRoPE” (enhanced MRope with interleaved layout)** 和 <strong>“交错式MRoPE” (Interleaved-MRoPE)</strong>。这正是前面部分所讨论的先进频率分配方案。</p>
-<p>Qwen团队在其<a href="%5BQwen%5D(https://qwen.ai/blog?id=99f0335c4ad9ff6153e517418d48535ab6d8afef&amp;from=research.latest-advancements-list)">技术博客</a>中明确指出了做出这一改变的原因：他们识别出原始“分块式”MRoPE将所有时序信息集中在高频维度的缺陷，并采用交错式方案来实现**“跨越时间、高度和宽度的全频率覆盖”**。这一决策是经过深思熟虑的，旨在直接解决前代M-RoPE方案的瓶颈。</p>
-<p>通过分析Qwen3-VL在Hugging Face等平台的官方代码库（例如<code>modeling_qwen3_vl.py</code>文件）和文档，我们可以进一步理解其实现细节。在代码层面，模型会为输入的视觉词元（来自图像或视频帧的patches）生成三维坐标 $(t, h, w)$。在应用RoPE时，查询和键向量的嵌入维度会根据交错模式被逻辑上地分配给这三个轴。对于一个给定的维度对，它会被指定用于旋转其中一个轴的坐标，而这个指定关系会在所有维度对上循环。最终，每个词元的Q和K向量会经历三次独立的旋转（分别由$t, h, w$坐标驱动），这些旋转效果叠加在一起，形成最终的位置编码。这种方式确保了模型在计算注意力时，能够同时、均衡地考虑所有维度上的相对位置关系。</p>
-<h3 id="3-3-实践意义与性能分析">3.3 实践意义与性能分析</h3>
-<p>Qwen3-VL采用交错式M-RoPE并非单纯的学术探索，而是由解决实际问题驱动的工程决策。官方文档和技术报告反复强调，这一特定的实现带来了**“更好的时空建模能力”<strong>和</strong>“增强的长时程视频推理能力”**。</p>
+<h3 id="qwen3-vl中的交错式m-rope实现">3.2 Qwen3-VL中的交错式M-RoPE实现</h3>
+<p>Qwen3-VL模型架构的一项核心更新，被官方明确描述为<strong>“增强的、采用交错式布局的MRoPE” (enhanced MRope with interleaved layout)</strong> 和 <strong>“交错式MRoPE” (Interleaved-MRoPE)</strong>。这正是前面部分所讨论的先进频率分配方案。</p>
+<p>Qwen团队在其<a href="%5BQwen%5D(https://qwen.ai/blog?id=99f0335c4ad9ff6153e517418d48535ab6d8afef&amp;from=research.latest-advancements-list)">技术博客</a>中明确指出了做出这一改变的原因：他们识别出原始“分块式”MRoPE将所有时序信息集中在高频维度的缺陷，并采用交错式方案来实现<strong>“跨越时间、高度和宽度的全频率覆盖”</strong>。这一决策是经过深思熟虑的，旨在直接解决前代M-RoPE方案的瓶颈。</p>
+<p>通过分析Qwen3-VL在Hugging Face等平台的官方代码库（例如<code>modeling_qwen3_vl.py</code>文件）和文档，我们可以进一步理解其实现细节。在代码层面，模型会为输入的视觉词元（来自图像或视频帧的patches）生成三维坐标 <span class="math inline">(<em>t</em>, <em>h</em>, <em>w</em>)</span>。在应用RoPE时，查询和键向量的嵌入维度会根据交错模式被逻辑上地分配给这三个轴。对于一个给定的维度对，它会被指定用于旋转其中一个轴的坐标，而这个指定关系会在所有维度对上循环。最终，每个词元的Q和K向量会经历三次独立的旋转（分别由<span class="math inline"><em>t</em>, <em>h</em>, <em>w</em></span>坐标驱动），这些旋转效果叠加在一起，形成最终的位置编码。这种方式确保了模型在计算注意力时，能够同时、均衡地考虑所有维度上的相对位置关系。</p>
+<h3 id="实践意义与性能分析">3.3 实践意义与性能分析</h3>
+<p>Qwen3-VL采用交错式M-RoPE并非单纯的学术探索，而是由解决实际问题驱动的工程决策。官方文档和技术报告反复强调，这一特定的实现带来了<strong>“更好的时空建模能力”</strong>和<strong>“增强的长时程视频推理能力”</strong>。</p>
 <p>这背后的因果联系是清晰且直接的：</p>
-<ol>
-<li><strong>提升长视频理解能力</strong>：通过确保时间轴 $t$ 能够使用低频旋转，模型的注意力不会随着视频时长的增加而过快衰减。这使得模型能够有效地关联视频开头和结尾的关键事件，从而在长达数小时的视频中实现精准的事件定位和内容理解。</li>
-<li><strong>增强空间推理能力</strong>：通过确保空间轴 $h$ 和 $w$ 也能访问完整的频率谱，模型获得了真正的多尺度空间感知能力。高频旋转使其能够关注图像中的精细纹理和微小物体（如文档中的字符），而低频旋转使其能够理解整体的布局和场景结构（如表格的行列关系）。</li>
+<ol type="1">
+<li><strong>提升长视频理解能力</strong>：通过确保时间轴 <span class="math inline"><em>t</em></span> 能够使用低频旋转，模型的注意力不会随着视频时长的增加而过快衰减。这使得模型能够有效地关联视频开头和结尾的关键事件，从而在长达数小时的视频中实现精准的事件定位和内容理解。</li>
+<li><strong>增强空间推理能力</strong>：通过确保空间轴 <span class="math inline"><em>h</em></span> 和 <span class="math inline"><em>w</em></span> 也能访问完整的频率谱，模型获得了真正的多尺度空间感知能力。高频旋转使其能够关注图像中的精细纹理和微小物体（如文档中的字符），而低频旋转使其能够理解整体的布局和场景结构（如表格的行列关系）。</li>
 </ol>
 <p>这种架构上的优化，直接转化为模型在各项基准测试和实际应用中的卓越表现。Qwen3-VL在复杂的长视频问答、文档解析和视觉定位等任务上的领先性能，很大程度上归功于其先进且经过精心设计的交错式M-RoPE机制。</p>
 <p>总而言之，Qwen3-VL中交错式M-RoPE的应用，是复杂问题驱动架构演进的典范。它并非一项全新的发明，而是对现有技术（M-RoPE）的深刻理解和精巧改良。这反映出大模型研发已进入一个成熟阶段，性能的提升不再仅仅依赖于数据和参数规模的堆砌，更来自于对模型内部机制的深刻洞察和有针对性的架构优化。这个过程可以概括为：识别关键任务瓶颈（如长视频理解）-&gt; 分析底层架构局限（如分块式M-RoPE的频率分配问题）-&gt; 提出并实施针对性的解决方案（交错式分配）-&gt; 实现模型能力的代际跃升。</p>
@@ -592,6 +576,7 @@ $$<br>
 
   
   
+
 
 
 
@@ -785,6 +770,49 @@ $$<br>
 
 
   <script>Fluid.plugins.imageCaption();</script>
+
+  
+      <script>
+        if (!window.MathJax) {
+          window.MathJax = {
+            tex    : {
+              inlineMath: { '[+]': [['$', '$']] }
+            },
+            loader : {
+              load: ['ui/lazy']
+            },
+            options: {
+              renderActions: {
+                insertedScript: [200, () => {
+                  document.querySelectorAll('mjx-container').forEach(node => {
+                    let target = node.parentNode;
+                    if (target.nodeName.toLowerCase() === 'li') {
+                      target.parentNode.classList.add('has-jax');
+                    }
+                  });
+                }, '', false]
+              }
+            }
+          };
+        } else {
+          MathJax.startup.document.state(0);
+          MathJax.texReset();
+          MathJax.typeset();
+          MathJax.typesetPromise();
+        }
+
+        Fluid.events.registerRefreshCallback(function() {
+          if ('MathJax' in window && MathJax.startup.document && typeof MathJax.startup.document.state === 'function') {
+            MathJax.startup.document.state(0);
+            MathJax.texReset();
+            MathJax.typeset();
+            MathJax.typesetPromise();
+          }
+        });
+      </script>
+    
+
+  <script  src="https://lib.baomitu.com/mathjax/3.2.2/es5/tex-mml-chtml.js" ></script>
 
   <script  src="/js/local-search.js" ></script>
 

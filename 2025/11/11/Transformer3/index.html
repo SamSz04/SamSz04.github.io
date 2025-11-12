@@ -19,12 +19,12 @@
   <meta name="author" content="Samsz">
   <meta name="keywords" content="Transformer,Positional Embedding,YaRN,Length Extrapolation">
   
-    <meta name="description" content="第一部分：问题的根源——RoPE 的“上下文天花板” 1.1 引言  建议先去阅读一下这篇大佬的文章：探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园，里面讲解的很清晰！本篇意在用更少的篇幅尝试讲清楚**YaRN **这一解决方案！  大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂的应用至关重要，例如处理长">
+    <meta name="description" content="第一部分：问题的根源——RoPE 的“上下文天花板” 1.1 引言  建议先去阅读一下这篇大佬的文章：探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园，里面讲解的很清晰！本篇意在用更少的篇幅尝试讲清楚YaRN 这一解决方案！  大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂的应用至关重要，例如处理">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Transformer位置编码(3)——从RoPE到YaRN外推">
 <meta property="og:url" content="https://samsz04.github.io/2025/11/11/Transformer3/index.html">
 <meta property="og:site_name" content="SamSz04&#39;s Blog">
-<meta property="og:description" content="第一部分：问题的根源——RoPE 的“上下文天花板” 1.1 引言  建议先去阅读一下这篇大佬的文章：探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园，里面讲解的很清晰！本篇意在用更少的篇幅尝试讲清楚**YaRN **这一解决方案！  大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂的应用至关重要，例如处理长">
+<meta property="og:description" content="第一部分：问题的根源——RoPE 的“上下文天花板” 1.1 引言  建议先去阅读一下这篇大佬的文章：探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园，里面讲解的很清晰！本篇意在用更少的篇幅尝试讲清楚YaRN 这一解决方案！  大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂的应用至关重要，例如处理">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/11/Transformer3/image1.jpg">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/11/Transformer3/image2.jpg">
@@ -36,7 +36,7 @@
 <meta property="og:image" content="https://samsz04.github.io/2025/11/11/Transformer3/image8.jpg">
 <meta property="og:image" content="https://samsz04.github.io/2025/11/11/Transformer3/image9.jpg">
 <meta property="article:published_time" content="2025-11-11T02:57:35.000Z">
-<meta property="article:modified_time" content="2025-11-12T02:43:32.296Z">
+<meta property="article:modified_time" content="2025-11-12T02:49:05.542Z">
 <meta property="article:author" content="Samsz">
 <meta property="article:tag" content="Transformer">
 <meta name="twitter:card" content="summary_large_image">
@@ -55,8 +55,6 @@
   <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
-
-  <link  rel="stylesheet" href="https://lib.baomitu.com/KaTeX/0.16.2/katex.min.css" />
 
 
 
@@ -235,7 +233,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          6.9k 字
+          6.8k 字
         
       </span>
     
@@ -246,7 +244,7 @@
         
         
         
-          58 分钟
+          57 分钟
         
       </span>
     
@@ -288,312 +286,251 @@
             
               <div class="markdown-body">
                 
-                <h2 id="第一部分：问题的根源——RoPE-的“上下文天花板”">第一部分：问题的根源——RoPE 的“上下文天花板”</h2>
-<h3 id="1-1-引言">1.1 引言</h3>
+                <h2 id="第一部分问题的根源rope-的上下文天花板">第一部分：问题的根源——RoPE 的“上下文天花板”</h2>
+<h3 id="引言">1.1 引言</h3>
 <blockquote>
-<p>建议先去阅读一下这篇大佬的文章：<a target="_blank" rel="noopener" href="https://www.cnblogs.com/rossiXYZ/p/18808744">探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园</a>，里面讲解的很清晰！本篇意在用更少的篇幅尝试讲清楚**YaRN **这一解决方案！</p>
+<p>建议先去阅读一下这篇大佬的文章：<a target="_blank" rel="noopener" href="https://www.cnblogs.com/rossiXYZ/p/18808744">探秘Transformer系列之（23）— 长度外推 - 罗西的思考 - 博客园</a>，里面讲解的很清晰！本篇意在用更少的篇幅尝试讲清楚<strong>YaRN </strong>这一解决方案！</p>
 </blockquote>
 <p>大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂的应用至关重要，例如处理长文档摘要、执行“大海捞针”式的知识库问答 (RAG)，或在大型代码库中进行辅助编程 。然而，大多数开源的 LLM（例如 Llama 2 系列）在设计上都受限于其预训练阶段设定的上下文窗口（例如 4096 个 token），这构成了它们能力的“天花板”。</p>
-<p><img src="image1.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
-<h3 id="1-2-RoPE-回顾（可参考笔者上期内容：Transformer位置编码-2-——RoPE）">1.2 RoPE 回顾（可参考笔者上期内容：<a href="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/">Transformer位置编码(2)——RoPE</a>）</h3>
+<p><img src="image1.jpg" srcset="/img/loading.gif" lazyload /></p>
+<h3 id="rope-回顾可参考笔者上期内容transformer位置编码2rope">1.2 RoPE 回顾（可参考笔者上期内容：<a href="https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/">Transformer位置编码(2)——RoPE</a>）</h3>
 <p>为了理解 YaRN，必须首先回顾它所要改进的基础：旋转位置编码 (RoPE) 。</p>
-<p>RoPE 的核心思想是，注意力分数应该只取决于 token 之间的相对距离 。它通过对查询 ($q$) 和键 ($k$) 向量应用一个与绝对位置 <em>m</em> 相关的旋转矩阵 $R_m$ 来实现这一点 。</p>
-<p>给定位置 $m$ 处的 $q$ 向量和位置 $n$ 处的 $k$ 向量，它们的位置编码版本 $q_m$ 和 $k_n$ 之间的内积 $q_m^T k_n$ 最终只依赖于相对位置 $(m-n)$ 。这种旋转是通过复数乘法或等效的 2x2 旋转矩阵实现的，其旋转角度 $\theta_{m,d}$ 由绝对位置 $m$ 和维度索引 $d$ 共同决定：</p>
-<p>$$<br>
-\theta_{m,d} = m \cdot \theta_d = m \cdot b^{-2d/D}<br>
-$$<br>
-其中 $b$ 是一个固定的基数（例如 10000），$D$ 是特征维度。</p>
-<p><img src="image2.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
-<h3 id="1-3-解构-RoPE-的“外推失败”-Extrapolation-Failure">1.3 解构 RoPE 的“外推失败” (Extrapolation Failure)</h3>
-<p>RoPE 的优雅设计在预训练窗口（例如 $L=4096$）内表现出色，但一旦序列长度 $m$ 超过 $L$，模型的性能（以困惑度 PPL 为衡量标准）会立即出现“悬崖式下跌” (cliff-like drop)。</p>
+<p>RoPE 的核心思想是，注意力分数应该只取决于 token 之间的相对距离 。它通过对查询 (<span class="math inline"><em>q</em></span>) 和键 (<span class="math inline"><em>k</em></span>) 向量应用一个与绝对位置 <em>m</em> 相关的旋转矩阵 <span class="math inline"><em>R</em><sub><em>m</em></sub></span> 来实现这一点 。</p>
+<p>给定位置 <span class="math inline"><em>m</em></span> 处的 <span class="math inline"><em>q</em></span> 向量和位置 <span class="math inline"><em>n</em></span> 处的 <span class="math inline"><em>k</em></span> 向量，它们的位置编码版本 <span class="math inline"><em>q</em><sub><em>m</em></sub></span> 和 <span class="math inline"><em>k</em><sub><em>n</em></sub></span> 之间的内积 <span class="math inline"><em>q</em><sub><em>m</em></sub><sup><em>T</em></sup><em>k</em><sub><em>n</em></sub></span> 最终只依赖于相对位置 <span class="math inline">(<em>m</em> − <em>n</em>)</span> 。这种旋转是通过复数乘法或等效的 2x2 旋转矩阵实现的，其旋转角度 <span class="math inline"><em>θ</em><sub><em>m</em>, <em>d</em></sub></span> 由绝对位置 <span class="math inline"><em>m</em></span> 和维度索引 <span class="math inline"><em>d</em></span> 共同决定：</p>
+<p><span class="math display"><em>θ</em><sub><em>m</em>, <em>d</em></sub> = <em>m</em> ⋅ <em>θ</em><sub><em>d</em></sub> = <em>m</em> ⋅ <em>b</em><sup> − 2<em>d</em>/<em>D</em></sup></span> 其中 <span class="math inline"><em>b</em></span> 是一个固定的基数（例如 10000），<span class="math inline"><em>D</em></span> 是特征维度。</p>
+<p><img src="image2.jpg" srcset="/img/loading.gif" lazyload /></p>
+<h3 id="解构-rope-的外推失败-extrapolation-failure">1.3 解构 RoPE 的“外推失败” (Extrapolation Failure)</h3>
+<p>RoPE 的优雅设计在预训练窗口（例如 <span class="math inline"><em>L</em> = 4096</span>）内表现出色，但一旦序列长度 <span class="math inline"><em>m</em></span> 超过 <span class="math inline"><em>L</em></span>，模型的性能（以困惑度 PPL 为衡量标准）会立即出现“悬崖式下跌” (cliff-like drop)。</p>
 <p>这种失败的根源在于其位置编码方法的“有限外推能力”。这被视为一个“预测阶段的分布外 (Out-Of-Distribution, OOD) 问题”。研究发现，即使使用了 RoPE 这样的相对编码，Transformer 模型仍然会“过拟合” (overfit) 它们在训练期间看到的特定位置嵌入。此外，训练动态也加剧了这一问题：处于序列后部（rear positions）的位置嵌入在训练中被更新的频率远低于前部位置，导致它们在更长上下文中的泛化能力很差。</p>
-<p><img src="image3.webp" srcset="/img/loading.gif" lazyload alt=""></p>
-<h3 id="1-4-深度洞察：为什么“相对”的-RoPE-会“绝对”地失败？">1.4 深度洞察：为什么“相对”的 RoPE 会“绝对”地失败？</h3>
-<p>RoPE 的失败常常被误解。尽管其<em>目标</em>是相对的，但其<em>实现</em>是绝对的（依赖于绝对位置 $m$）。失败的核心原因在于<strong>低频维度在外推时产生了 OOD 旋转角</strong>。</p>
+<p><img src="image3.webp" srcset="/img/loading.gif" lazyload /></p>
+<h3 id="深度洞察为什么相对的-rope-会绝对地失败">1.4 深度洞察：为什么“相对”的 RoPE 会“绝对”地失败？</h3>
+<p>RoPE 的失败常常被误解。尽管其<em>目标</em>是相对的，但其<em>实现</em>是绝对的（依赖于绝对位置 <span class="math inline"><em>m</em></span>）。失败的核心原因在于<strong>低频维度在外推时产生了 OOD 旋转角</strong>。</p>
 <p>这个失败过程可以分解如下：</p>
-<ol>
-<li><strong>频率差异：</strong> RoPE 的不同维度 $d$ 具有不同的旋转“速度” $\theta_d$。</li>
-<li><strong>高频维度 (High-frequency, $d$ 较小)：</strong> $\theta_d$ 很大，旋转很快。在训练窗口内，这些维度可能已经旋转了数十甚至上百圈（即 $\theta_{m,d} \gg 2\pi$）。当 $m &gt; 4095$ 时，例如 $m=4097$，其角度只是“再多转一点”，模型在训练中已经见过无数次相似的角度值（例如 $\theta_{m,d} \mod 2\pi$），因此可以很好地处理外推。</li>
-<li><strong>低频维度 (Low-frequency, $d$ 较大)：</strong> $\theta_d$ 极小，旋转极慢。</li>
-<li><strong>失败点：</strong> 对于某些用于编码长距离关系的低频维度，其在 $m=4095$ 时的总旋转角度可能仍小于 $2\pi$ 。当模型在推理时遇到 $m = 8000$ 的 token 时，这个维度的旋转角<strong>首次</strong>超过了 $2\pi$。</li>
-<li><strong>OOD 灾难：</strong> 模型在预训练期间从未见过该维度产生大于 $2\pi$ 的旋转角。它无法将这个 OOD 信号解释为有效的位置信息。这导致了不稳定的注意力分数，进而导致注意力机制的崩溃，特别是在评估长距离依赖关系时。</li>
+<ol type="1">
+<li><strong>频率差异：</strong> RoPE 的不同维度 <span class="math inline"><em>d</em></span> 具有不同的旋转“速度” <span class="math inline"><em>θ</em><sub><em>d</em></sub></span>。</li>
+<li><strong>高频维度 (High-frequency, <span class="math inline"><em>d</em></span> 较小)：</strong> <span class="math inline"><em>θ</em><sub><em>d</em></sub></span> 很大，旋转很快。在训练窗口内，这些维度可能已经旋转了数十甚至上百圈（即 <span class="math inline"><em>θ</em><sub><em>m</em>, <em>d</em></sub> ≫ 2<em>π</em></span>）。当 <span class="math inline"><em>m</em> &gt; 4095</span> 时，例如 <span class="math inline"><em>m</em> = 4097</span>，其角度只是“再多转一点”，模型在训练中已经见过无数次相似的角度值（例如 <span class="math inline"><em>θ</em><sub><em>m</em>, <em>d</em></sub> mod  2<em>π</em></span>），因此可以很好地处理外推。</li>
+<li><strong>低频维度 (Low-frequency, <span class="math inline"><em>d</em></span> 较大)：</strong> <span class="math inline"><em>θ</em><sub><em>d</em></sub></span> 极小，旋转极慢。</li>
+<li><strong>失败点：</strong> 对于某些用于编码长距离关系的低频维度，其在 <span class="math inline"><em>m</em> = 4095</span> 时的总旋转角度可能仍小于 <span class="math inline">2<em>π</em></span> 。当模型在推理时遇到 <span class="math inline"><em>m</em> = 8000</span> 的 token 时，这个维度的旋转角<strong>首次</strong>超过了 <span class="math inline">2<em>π</em></span>。</li>
+<li><strong>OOD 灾难：</strong> 模型在预训练期间从未见过该维度产生大于 <span class="math inline">2<em>π</em></span> 的旋转角。它无法将这个 OOD 信号解释为有效的位置信息。这导致了不稳定的注意力分数，进而导致注意力机制的崩溃，特别是在评估长距离依赖关系时。</li>
 </ol>
-<p>因此，所有上下文扩展技术的核心挑战是：如何处理这些在 $m &gt; L$ 时“失控”的低频维度。</p>
-<h2 id="第二部分：上下文扩展的演进之路-The-Lineage">第二部分：上下文扩展的演进之路 (The Lineage)</h2>
-<p>首先，参考<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/15311461897">从ROPE到Yarn, 一条通用公式速通长文本大模型中的位置编码</a>和论文<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2309.00071">YaRN: Efficient Context Window Extension of Large Language Models</a>中的内容，Yarn的作者认为编码函数是一个关于输入向量x、位置m 和θ 的函数，无论是ROPE还是它的所有变种，本质上都可以被以下公式所统一：<br>
-$$<br>
-f’_W(x_m, m, \theta_d) = f_W(x_m, g(m), h(\theta_d))<br>
-$$<br>
-其中：</p>
+<p>因此，所有上下文扩展技术的核心挑战是：如何处理这些在 <span class="math inline"><em>m</em> &gt; <em>L</em></span> 时“失控”的低频维度。</p>
+<h2 id="第二部分上下文扩展的演进之路-the-lineage">第二部分：上下文扩展的演进之路 (The Lineage)</h2>
+<p>首先，参考<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/15311461897">从ROPE到Yarn, 一条通用公式速通长文本大模型中的位置编码</a>和论文<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2309.00071">YaRN: Efficient Context Window Extension of Large Language Models</a>中的内容，Yarn的作者认为编码函数是一个关于输入向量x、位置m 和θ 的函数，无论是ROPE还是它的所有变种，本质上都可以被以下公式所统一： <span class="math display"><em>f</em>′<sub><em>W</em></sub>(<em>x</em><sub><em>m</em></sub>, <em>m</em>, <em>θ</em><sub><em>d</em></sub>) = <em>f</em><sub><em>W</em></sub>(<em>x</em><sub><em>m</em></sub>, <em>g</em>(<em>m</em>), <em>h</em>(<em>θ</em><sub><em>d</em></sub>))</span> 其中：</p>
 <ul>
-<li>$f′$ 是调整后的查询（query）和键（key）向量。</li>
+<li><span class="math inline"><em>f</em>′</span> 是调整后的查询（query）和键（key）向量。</li>
 <li>$ f $ 是原始的查询和键向量计算函数。</li>
-<li>$x_m$ 是输入序列中位置m的嵌入向量。</li>
+<li><span class="math inline"><em>x</em><sub><em>m</em></sub></span> 是输入序列中位置m的嵌入向量。</li>
 <li>$ m $ 是序列中的位置索引。</li>
-<li>$θ_d$ 是RoPE中的旋转角度参数，即频率参数。</li>
-<li>$g(m)$ 是一个可调函数，用于根据比例因子$s$调整位置索引$m$，描述位置的变换逻辑。</li>
-<li>$h(θ_d)$是一个可调函数，用于根据比例因子$s$调整RoPE的旋转角度参数 $θ_d$ ，描述频率的变换逻辑。</li>
+<li><span class="math inline"><em>θ</em><sub><em>d</em></sub></span> 是RoPE中的旋转角度参数，即频率参数。</li>
+<li><span class="math inline"><em>g</em>(<em>m</em>)</span> 是一个可调函数，用于根据比例因子<span class="math inline"><em>s</em></span>调整位置索引<span class="math inline"><em>m</em></span>，描述位置的变换逻辑。</li>
+<li><span class="math inline"><em>h</em>(<em>θ</em><sub><em>d</em></sub>)</span>是一个可调函数，用于根据比例因子<span class="math inline"><em>s</em></span>调整RoPE的旋转角度参数 <span class="math inline"><em>θ</em><sub><em>d</em></sub></span> ，描述频率的变换逻辑。</li>
 </ul>
-<h3 id="2-1-解决方案一：位置插值-PI-——“挤压”策略">2.1 解决方案一：位置插值 (PI)——“挤压”策略</h3>
+<h3 id="解决方案一位置插值-pi挤压策略">2.1 解决方案一：位置插值 (PI)——“挤压”策略</h3>
 <p>第一个被广泛采用的解决方案是位置插值 (Position Interpolation, PI)。</p>
 <ul>
-<li>
-<p>**核心思想：**PI 的思想非常简单：不要进行外推 (Extrapolation)，转而进行内插 (Interpolation)。</p>
-</li>
-<li>
-<p>**机理：**它将需要处理的更长序列 $L’$（例如 32k）的 <em>位置索引</em> $m’$（范围 $[0, L’-1]$）<em><strong>线性缩放</strong></em>（或称“挤压”）到模型预训练的原始范围 $L$（例如 4k）之内（范围 $[0, L-1]$）。</p>
-</li>
-<li>
-<p>数学公式： 定义缩放因子 $s = L’ / L$。PI 修改了 RoPE 的位置函数 $g(m)$：</p>
-<p>$$<br>
-g(m) = m / s<br>
-$$</p>
-<p>$$<br>
-h(\theta_d) = \theta_d<br>
-$$</p>
-<p>原始的旋转角度 $\theta_{m,d} = m \cdot \theta_d$ 被替换为 $\theta_{m,d}’ = (m/s) \cdot \theta_d$。</p>
-<p><img src="image4.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
-</li>
-<li>
-<p><strong>应用：</strong> LLaMA-2-7B-32K 和 Meta 自己的 Llama 2 Long 都采用了 PI 作为其上下文扩展策略。</p>
-</li>
-<li>
-<p><strong>优势：</strong> PI 完美地解决了 OOD 问题。通过 PI，模型<em>永远</em>不会遇到超出其训练范围 $[0, L-1]$ 的位置索引。此外，它非常高效：仅需少量微调（例如 1000 步）即可将 LLaMA 的上下文从 4k 扩展到 32k ，这远比从头预训练高效得多。</p>
-</li>
+<li><p><strong>核心思想：</strong>PI 的思想非常简单：不要进行外推 (Extrapolation)，转而进行内插 (Interpolation)。</p></li>
+<li><p><strong>机理：</strong>它将需要处理的更长序列 <span class="math inline"><em>L</em>′</span>（例如 32k）的 <em>位置索引</em> <span class="math inline"><em>m</em>′</span>（范围 <span class="math inline">[0, <em>L</em>′ − 1]</span>）<strong><em>线性缩放</em></strong>（或称“挤压”）到模型预训练的原始范围 <span class="math inline"><em>L</em></span>（例如 4k）之内（范围 <span class="math inline">[0, <em>L</em> − 1]</span>）。</p></li>
+<li><p>数学公式： 定义缩放因子 <span class="math inline"><em>s</em> = <em>L</em>′/<em>L</em></span>。PI 修改了 RoPE 的位置函数 <span class="math inline"><em>g</em>(<em>m</em>)</span>：</p>
+<p><span class="math display"><em>g</em>(<em>m</em>) = <em>m</em>/<em>s</em></span></p>
+<p><span class="math display"><em>h</em>(<em>θ</em><sub><em>d</em></sub>) = <em>θ</em><sub><em>d</em></sub></span></p>
+<p>原始的旋转角度 <span class="math inline"><em>θ</em><sub><em>m</em>, <em>d</em></sub> = <em>m</em> ⋅ <em>θ</em><sub><em>d</em></sub></span> 被替换为 <span class="math inline"><em>θ</em><sub><em>m</em>, <em>d</em></sub>′ = (<em>m</em>/<em>s</em>) ⋅ <em>θ</em><sub><em>d</em></sub></span>。</p>
+<p><img src="image4.jpg" srcset="/img/loading.gif" lazyload /></p></li>
+<li><p><strong>应用：</strong> LLaMA-2-7B-32K 和 Meta 自己的 Llama 2 Long 都采用了 PI 作为其上下文扩展策略。</p></li>
+<li><p><strong>优势：</strong> PI 完美地解决了 OOD 问题。通过 PI，模型<em>永远</em>不会遇到超出其训练范围 <span class="math inline">[0, <em>L</em> − 1]</span> 的位置索引。此外，它非常高效：仅需少量微调（例如 1000 步）即可将 LLaMA 的上下文从 4k 扩展到 32k ，这远比从头预训练高效得多。</p></li>
 </ul>
-<h3 id="2-2-PI-的代价：高频信息的损失">2.2 PI 的代价：高频信息的损失</h3>
+<h3 id="pi-的代价高频信息的损失">2.2 PI 的代价：高频信息的损失</h3>
 <p>然而，PI 并非没有代价。它的主要缺陷在于它<em>统一</em>缩放了所有维度。PI 牺牲了位置的“分辨率”来换取“范围”。</p>
-<p><img src="image5.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
+<p><img src="image5.jpg" srcset="/img/loading.gif" lazyload /></p>
 <p>这个代价的产生过程如下：</p>
-<ol>
-<li>PI 将 $m$ 替换为 $m/s$。</li>
-<li>考虑两个相邻的 token（例如位置 $m$ 和 $m+1$）。在 PI 处理后，它们在位置空间中的“有效距离”从 $1$ 变成了 $(m+1)/s - m/s = 1/s$。</li>
-<li>当 $s$ 很大时（例如 $s=16$，即 4k -&gt; 64k），这个有效距离 $1/s$ 变得非常小。</li>
+<ol type="1">
+<li>PI 将 <span class="math inline"><em>m</em></span> 替换为 <span class="math inline"><em>m</em>/<em>s</em></span>。</li>
+<li>考虑两个相邻的 token（例如位置 <span class="math inline"><em>m</em></span> 和 <span class="math inline"><em>m</em> + 1</span>）。在 PI 处理后，它们在位置空间中的“有效距离”从 <span class="math inline">1</span> 变成了 <span class="math inline">(<em>m</em> + 1)/<em>s</em> − <em>m</em>/<em>s</em> = 1/<em>s</em></span>。</li>
+<li>当 <span class="math inline"><em>s</em></span> 很大时（例如 <span class="math inline"><em>s</em> = 16</span>，即 4k -&gt; 64k），这个有效距离 <span class="math inline">1/<em>s</em></span> 变得非常小。</li>
 <li>RoPE 的高频维度（High-frequency dimensions）存在的意义恰恰是区分<em>近距离</em> token 的相对顺序。</li>
-<li>当 PI 将它们的有效距离压缩到 $1/s$ 时，这些高频维度产生的旋转角度差异也变得微乎其微，导致模型难以区分它们的顺序。</li>
+<li>当 PI 将它们的有效距离压缩到 <span class="math inline">1/<em>s</em></span> 时，这些高频维度产生的旋转角度差异也变得微乎其微，导致模型难以区分它们的顺序。</li>
 <li>这就是“高频信息损失” (loss of high frequency) 或“近距离 token 混淆” (confusion about positional order of close-by tokens) 的根本原因。</li>
-<li>**后果：**经过 PI 微调的模型，虽然获得了长上下文能力，但在<em>短</em>上下文任务上的表现却会下降。</li>
+<li><strong>后果：</strong>经过 PI 微调的模型，虽然获得了长上下文能力，但在<em>短</em>上下文任务上的表现却会下降。</li>
 </ol>
-<p><img src="image6.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
-<h3 id="2-3-解决方案二：“NTK-aware”-缩放——“非线性”修复">2.3 解决方案二：“NTK-aware” 缩放——“非线性”修复</h3>
+<p><img src="image6.jpg" srcset="/img/loading.gif" lazyload /></p>
+<h3 id="解决方案二ntk-aware-缩放非线性修复">2.3 解决方案二：“NTK-aware” 缩放——“非线性”修复</h3>
 <p>“NTK-aware” 缩放的提出正是为了解决 PI 丢失高频信息的问题。该方法受到了神经切线核 (Neural Tangent Kernel, NTK) 理论的启发，NTK 理论表明高频分量对于深度神经网络的学习至关重要。</p>
-<p><img src="image7.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
+<p><img src="image7.jpg" srcset="/img/loading.gif" lazyload /></p>
 <ul>
-<li>
-<p>**核心思想：**与其缩放位置 $m$，不如缩放 RoPE 的<em>基频 (base)</em> $b$ 。</p>
-</li>
-<li>
-<p>**机理：**这种缩放是<em>非线性</em>的。它旨在“分散插值压力”：对低频维度进行大幅度缩放（类似于 PI），但对高频维度<em>只进行轻微</em>缩放，从而保留它们。</p>
-</li>
-<li>
-<p><strong>数学公式：</strong><br>
-$$<br>
-g(m) = m<br>
-$$</p>
-<p>$$<br>
-h(\theta_d) = b’^{-2d/D} \quad (\text{即修改 } \theta_d)<br>
-$$</p>
-<p>$$<br>
-\text{其中新基数 } b’ = b \cdot s^{\frac{|D|}{|D| - 2}}<br>
-$$</p>
-</li>
-<li>
-<p>**优势：**在<em>不进行任何微调</em>的情况下（这种用法被称为 “Dynamic NTK”），“NTK-aware” 缩放在长序列上的 PPL 表现优于 PI。它成功地保留了高频信息。</p>
-</li>
-<li>
-<p>**拟合曲线：**NTK-aware Interpolation方法其实是将外推的程度定义成一个与组别 $d$ 有关的函数 $γ(d)$ 。</p>
+<li><p><strong>核心思想：</strong>与其缩放位置 <span class="math inline"><em>m</em></span>，不如缩放 RoPE 的<em>基频 (base)</em> <span class="math inline"><em>b</em></span> 。</p></li>
+<li><p><strong>机理：</strong>这种缩放是<em>非线性</em>的。它旨在“分散插值压力”：对低频维度进行大幅度缩放（类似于 PI），但对高频维度<em>只进行轻微</em>缩放，从而保留它们。</p></li>
+<li><p><strong>数学公式：</strong> <span class="math display"><em>g</em>(<em>m</em>) = <em>m</em></span></p>
+<p><span class="math display"><em>h</em>(<em>θ</em><sub><em>d</em></sub>) = <em>b</em>′<sup> − 2<em>d</em>/<em>D</em></sup>  (即修改 <em>θ</em><sub><em>d</em></sub>)</span></p>
+<p><span class="math display">$$
+  \text{其中新基数 } b' = b \cdot s^{\frac{|D|}{|D| - 2}}
+  $$</span></p></li>
+<li><p><strong>优势：</strong>在<em>不进行任何微调</em>的情况下（这种用法被称为 “Dynamic NTK”），“NTK-aware” 缩放在长序列上的 PPL 表现优于 PI。它成功地保留了高频信息。</p></li>
+<li><p><strong>拟合曲线：</strong>NTK-aware Interpolation方法其实是将外推的程度定义成一个与组别 <span class="math inline"><em>d</em></span> 有关的函数 <span class="math inline"><em>γ</em>(<em>d</em>)</span> 。</p>
 <ul>
-<li>$d = 0$ 为最高频分量，我们希望完全外推，此时 $γ(d)= 1.0$ 。</li>
-<li>$d = D/2 -1$ 为最低频分量，我们希望完全内插，此时 $γ(d) = L/L’$ 。</li>
+<li><span class="math inline"><em>d</em> = 0</span> 为最高频分量，我们希望完全外推，此时 <span class="math inline"><em>γ</em>(<em>d</em>) = 1.0</span> 。</li>
+<li><span class="math inline"><em>d</em> = <em>D</em>/2 − 1</span> 为最低频分量，我们希望完全内插，此时 <span class="math inline"><em>γ</em>(<em>d</em>) = <em>L</em>/<em>L</em>′</span> 。</li>
 </ul>
-<p>这个函数可以用一条以分组 $d$ 为变量的经过点$(0,1)$与点$(𝐷/2−1,L/L′)$的单调递减的曲线。具体曲线形式有多种，论文中使用指数函数来拟合这条曲线，得到$γ(d)=s^\frac{-2d}{D - 2}，s = L’/L$。</p>
-</li>
+<p>这个函数可以用一条以分组 <span class="math inline"><em>d</em></span> 为变量的经过点<span class="math inline">(0, 1)</span>与点<span class="math inline">(<em>𝐷</em>/2 − 1, <em>L</em>/<em>L</em>′)</span>的单调递减的曲线。具体曲线形式有多种，论文中使用指数函数来拟合这条曲线，得到<span class="math inline">$γ(d)=s^\frac{-2d}{D - 2}，s = L'/L$</span>。</p></li>
 </ul>
-<p>我们也可以从<strong>时钟</strong>的角度来理解。RoPE 的行为就像一个时钟，每一个 $\theta$ 值就控制着一块圆盘的转动速度，一共有 $d/2$ 个圆盘。</p>
-<p><img src="image8.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
+<p>我们也可以从<strong>时钟</strong>的角度来理解。RoPE 的行为就像一个时钟，每一个 <span class="math inline"><em>θ</em></span> 值就控制着一块圆盘的转动速度，一共有 <span class="math inline"><em>d</em>/2</span> 个圆盘。</p>
+<p><img src="image8.jpg" srcset="/img/loading.gif" lazyload /></p>
 <p>我们假设前三个转盘是秒针，分针和时针。12小时时钟基本上是一个维度为 3、底数为 60 的 RoPE。秒针，分针和时针是不同的频率在旋转。（频率从高到低）每秒钟，分针转动 1/60 分钟，每分钟，时针转动 1/60。现在RoPE时钟一天最大能表达：60 * 60 * 12=43200s。如果希望时钟表达的时间变长，假如想表达4天，则需要将时钟减慢4倍，那么有如下两种方法：</p>
 <ul>
 <li>PI：将每秒，分钟，时钟的频率平等的缩小4倍（周期变长），可以实现这个目标。不幸的是，现在很难区分每一秒，因为现在秒针几乎每秒都不会移动。因此，如果有人给你两个不同的时间，仅相差一秒，你将无法从远处区分它们。</li>
-<li>NTK-Aware RoPE：我们应该对频率高的秒钟，不做缩放，而会将分钟减慢 1.5 倍，将小时减慢 2 倍，即可以在一小时内容纳 90 分钟，在半天内容纳 24 小时。现在时钟可以表达：60 * (60 * 1.5)*(2 * 12)=129600.0。我们只关注整体的时间：那么不需要精确测量时针，所以与秒相比，将小时缩放得更多是至关重要的。我们不想失去秒针的精度，但我们可以承受分针甚至时针的精度损失。</li>
+<li>NTK-Aware RoPE：我们应该对频率高的秒钟，不做缩放，而会将分钟减慢 1.5 倍，将小时减慢 2 倍，即可以在一小时内容纳 90 分钟，在半天内容纳 24 小时。现在时钟可以表达：60 * (60 * 1.5)<em>(2 </em> 12)=129600.0。我们只关注整体的时间：那么不需要精确测量时针，所以与秒相比，将小时缩放得更多是至关重要的。我们不想失去秒针的精度，但我们可以承受分针甚至时针的精度损失。</li>
 </ul>
-<h3 id="2-4-“NTK-aware”-的新困境：微调失败">2.4 “NTK-aware” 的新困境：微调失败</h3>
+<h3 id="ntk-aware-的新困境微调失败">2.4 “NTK-aware” 的新困境：微调失败</h3>
 <p>“NTK-aware” 似乎是一个更好的解决方案，但它在实践中暴露了一个致命缺陷：尽管它在零调优（zero-shot）长下文上表现不错，但<em>在微调后</em>的性能却<em>劣于</em> PI 。</p>
 <p>其失败的深层原因在于 “NTK-aware” <em>不是</em>一个纯粹的“插值”方案：</p>
-<ol>
-<li>PI 保证了所有 $m/s$ 都在 $[0, L-1]$ 的<em>分布内</em> (in-distribution)。这为微调提供了一个稳定（尽管分辨率低）的目标。</li>
-<li>“NTK-aware” 通过改变基频 $b$ 来<em>扭曲</em>整个频率空间。</li>
-<li>这种扭曲虽然保留了高频，但也导致<em>某些</em>维度的旋转角度被<em>外推</em>到了“越界” (out-of-bound) 值。即实际上，在RoPE的训练过程中存在一些足够低频的分量，这些低频分量对应的波长 $λ_d$ 长到即使是训练过程中最长的序列，也没有办法让这些分量经过一个完整周期。对于这些分量，我们显然不应该对他们进行任何的外推。否则可能会引入一些从未见过的旋转角度，这些旋转角度对应的正余弦值在训练过程中模型也从未见过，会导致模型的效果下降。</li>
+<ol type="1">
+<li>PI 保证了所有 <span class="math inline"><em>m</em>/<em>s</em></span> 都在 <span class="math inline">[0, <em>L</em> − 1]</span> 的<em>分布内</em> (in-distribution)。这为微调提供了一个稳定（尽管分辨率低）的目标。</li>
+<li>“NTK-aware” 通过改变基频 <span class="math inline"><em>b</em></span> 来<em>扭曲</em>整个频率空间。</li>
+<li>这种扭曲虽然保留了高频，但也导致<em>某些</em>维度的旋转角度被<em>外推</em>到了“越界” (out-of-bound) 值。即实际上，在RoPE的训练过程中存在一些足够低频的分量，这些低频分量对应的波长 <span class="math inline"><em>λ</em><sub><em>d</em></sub></span> 长到即使是训练过程中最长的序列，也没有办法让这些分量经过一个完整周期。对于这些分量，我们显然不应该对他们进行任何的外推。否则可能会引入一些从未见过的旋转角度，这些旋转角度对应的正余弦值在训练过程中模型也从未见过，会导致模型的效果下降。</li>
 <li>因此，模型在微调时，面对的是一个<em>不稳定</em>的位置编码目标（部分维度在分布内，部分维度在分布外）。这比 PI 提供的<em>完全在分布内</em>的模糊目标更难学习。</li>
 </ol>
 <p>此时，研究人员面临一个挑战：如何设计一种方法，既能像 “NTK-aware” 一样<strong>保留高频信息</strong>，又能像 PI 一样<strong>保证所有维度都在分布内</strong>（纯插值），以便于稳定微调？</p>
 <p>这就是 YaRN 登场的契机。</p>
-<h2 id="第三部分：YaRN-的核心机制-I-——-“NTK-by-parts”-精细化插值">第三部分：YaRN 的核心机制 (I) —— “NTK-by-parts” 精细化插值</h2>
+<h2 id="第三部分yarn-的核心机制-i-ntk-by-parts-精细化插值">第三部分：YaRN 的核心机制 (I) —— “NTK-by-parts” 精细化插值</h2>
 <p>YaRN (Yet another RoPE extensioN method) 认识到，PI 和 NTK-aware 的失败在于它们试图用“一刀切”的方案处理所有 RoPE 维度。</p>
-<h3 id="3-1-YaRN-的核心洞察：分而治之-By-Parts">3.1 YaRN 的核心洞察：分而治之 (By-Parts)</h3>
+<h3 id="yarn-的核心洞察分而治之-by-parts">3.1 YaRN 的核心洞察：分而治之 (By-Parts)</h3>
 <p>YaRN 的革命性思想是：<strong>根本不应该插值高频维度，而应该只插值低频维度</strong> 。</p>
 <ul>
 <li><strong>机理分析：</strong>
 <ul>
 <li><strong>高频（短波长）维度：</strong> 它们用于编码<em>局部</em>相对位置（例如相邻词的顺序）。插值它们会破坏这种能力（这是 PI 的错误）。</li>
 <li><strong>低频（长波长）维度：</strong> 它们用于编码<em>全局</em>相对位置（例如段落间的关系）。外推它们会产生 OOD 错误（这是 RoPE 的原始错误）。</li>
-</ul>
-</li>
+</ul></li>
 <li><strong>YaRN 的策略：</strong>
-<ol>
-<li>对高频维度：保留原始 $\theta_d$。</li>
-<li>对低频维度：应用 PI ($\theta_d / s$)。</li>
+<ol type="1">
+<li>对高频维度：保留原始 <span class="math inline"><em>θ</em><sub><em>d</em></sub></span>。</li>
+<li>对低频维度：应用 PI (<span class="math inline"><em>θ</em><sub><em>d</em></sub>/<em>s</em></span>)。</li>
 <li>在两者之间：平滑过渡。</li>
-</ol>
-</li>
+</ol></li>
 </ul>
-<h3 id="3-2-数学解构-1-：Ramp-Function-gamma">3.2 数学解构 (1)：Ramp Function ($\gamma$)</h3>
-<p>为了实现这种“分而治之”的策略，“NTK-by-parts”（YaRN 使用的插值方法）引入了一个“斜坡函数” (ramp function) $\gamma®$ 。</p>
+<h3 id="数学解构-1ramp-function-gamma">3.2 数学解构 (1)：Ramp Function (<span class="math inline"><em>γ</em></span>)</h3>
+<p>为了实现这种“分而治之”的策略，“NTK-by-parts”（YaRN 使用的插值方法）引入了一个“斜坡函数” (ramp function) <span class="math inline"><em>γ</em>(<em>r</em>)</span> 。</p>
 <ul>
-<li>
-<p><strong>关键变量：<strong>该函数不直接依赖于维度 $d$，而是依赖于一个物理意义更强的比率 $r(d)$ ：<br>
-$$<br>
-r(d) = L / \lambda_d<br>
-$$<br>
-其中 $L$ 是原始上下文长度（例如 4096），$\lambda_d$ 是第 $d$ 维的波长。$r(d)$ 的直观含义是：</strong>“在原始上下文窗口中，第 $d$ 维旋转了多少圈”</strong></p>
-</li>
-<li>
-<p>**斜坡函数 $\gamma®$ 定义：**该函数引入了两个超参数 $\alpha$ 和 $\beta$ 来定义插值的边界。对于 Llama 模型，实验发现 $\alpha=1$ 和 $\beta=32$ 是很好的取值。<br>
-$$<br>
-\gamma® =<br>
-\begin{cases}<br>
-0, &amp; r &lt; \alpha \quad (\text{例如 } r &lt; 1), \[6pt]<br>
-1, &amp; r &gt; \beta \quad (\text{例如 } r &gt; 32), \[6pt]<br>
-\dfrac{r - \alpha}{\beta - \alpha}, &amp; \text{其他情况.}<br>
-\end{cases}<br>
-$$</p>
-</li>
+<li><p><strong>关键变量：</strong>该函数不直接依赖于维度 <span class="math inline"><em>d</em></span>，而是依赖于一个物理意义更强的比率 <span class="math inline"><em>r</em>(<em>d</em>)</span> ：<br />
+<span class="math display"><em>r</em>(<em>d</em>) = <em>L</em>/<em>λ</em><sub><em>d</em></sub></span> 其中 <span class="math inline"><em>L</em></span> 是原始上下文长度（例如 4096），<span class="math inline"><em>λ</em><sub><em>d</em></sub></span> 是第 <span class="math inline"><em>d</em></span> 维的波长。<span class="math inline"><em>r</em>(<em>d</em>)</span> 的直观含义是：<strong>“在原始上下文窗口中，第 <span class="math inline"><em>d</em></span> 维旋转了多少圈”</strong></p></li>
+<li><p><strong>斜坡函数 <span class="math inline"><em>γ</em>(<em>r</em>)</span> 定义：</strong>该函数引入了两个超参数 <span class="math inline"><em>α</em></span> 和 <span class="math inline"><em>β</em></span> 来定义插值的边界。对于 Llama 模型，实验发现 <span class="math inline"><em>α</em> = 1</span> 和 <span class="math inline"><em>β</em> = 32</span> 是很好的取值。<br />
+<span class="math display">$$
+  \gamma(r) =
+  \begin{cases}
+  0, &amp; r &lt; \alpha \quad (\text{例如 } r &lt; 1), \\[6pt]
+  1, &amp; r &gt; \beta \quad (\text{例如 } r &gt; 32), \\[6pt]
+  \dfrac{r - \alpha}{\beta - \alpha}, &amp; \text{其他情况.}
+  \end{cases}
+  $$</span></p></li>
 </ul>
-<h3 id="3-3-数学解构-2-：-h-theta-d-混合函数">3.3 数学解构 (2)：$h(\theta_d)$ 混合函数</h3>
-<p>YaRN (NTK-by-parts) 的频率修改函数 $h(\theta_d)$ 被定义为 PI 频率 ($\theta_d / s$) 和 原始 RoPE 频率 ($\theta_d$) 的加权平均，权重由 $\gamma®$ 控制：</p>
-<p>$$<br>
-h(\theta_d) = \left( 1 - \gamma® \right) \frac{\theta_d}{s} + \gamma® \theta_d<br>
-$$</p>
-<h3 id="3-4-深度洞察：三种模式的“三重奏”">3.4 深度洞察：三种模式的“三重奏”</h3>
-<p>“NTK-by-parts” 是一个极其精妙的设计，它完美地合成了 PI 和 NTK-aware 的优点。我们可以通过分析 $\gamma®$ 的三个区间来理解其工作原理：</p>
-<ol>
+<h3 id="数学解构-2htheta_d-混合函数">3.3 数学解构 (2)：<span class="math inline"><em>h</em>(<em>θ</em><sub><em>d</em></sub>)</span> 混合函数</h3>
+<p>YaRN (NTK-by-parts) 的频率修改函数 <span class="math inline"><em>h</em>(<em>θ</em><sub><em>d</em></sub>)</span> 被定义为 PI 频率 (<span class="math inline"><em>θ</em><sub><em>d</em></sub>/<em>s</em></span>) 和 原始 RoPE 频率 (<span class="math inline"><em>θ</em><sub><em>d</em></sub></span>) 的加权平均，权重由 <span class="math inline"><em>γ</em>(<em>r</em>)</span> 控制：</p>
+<p><span class="math display">$$
+h(\theta_d) = \left( 1 - \gamma(r) \right) \frac{\theta_d}{s} + \gamma(r) \theta_d
+$$</span></p>
+<h3 id="深度洞察三种模式的三重奏">3.4 深度洞察：三种模式的“三重奏”</h3>
+<p>“NTK-by-parts” 是一个极其精妙的设计，它完美地合成了 PI 和 NTK-aware 的优点。我们可以通过分析 <span class="math inline"><em>γ</em>(<em>r</em>)</span> 的三个区间来理解其工作原理：</p>
+<ol type="1">
 <li>模式 1：低频维度 (Low Frequencies)
 <ul>
-<li><strong>条件：</strong> $r &lt; \alpha$ (例如 $r &lt; 1$)。这意味着波长 $\lambda_d &gt; L$。这些是在原始上下文中“一圈都没转完”的维度，它们是 OOD 错误的<em>主要来源</em>。</li>
-<li><strong>计算：</strong> $\gamma® = 0$。</li>
-<li><strong>公式：</strong> $h(\theta_d) = (1-0) \cdot (\theta_d / s) + 0 \cdot \theta_d = \theta_d / s$。</li>
+<li><strong>条件：</strong> <span class="math inline"><em>r</em> &lt; <em>α</em></span> (例如 <span class="math inline"><em>r</em> &lt; 1</span>)。这意味着波长 <span class="math inline"><em>λ</em><sub><em>d</em></sub> &gt; <em>L</em></span>。这些是在原始上下文中“一圈都没转完”的维度，它们是 OOD 错误的<em>主要来源</em>。</li>
+<li><strong>计算：</strong> <span class="math inline"><em>γ</em>(<em>r</em>) = 0</span>。</li>
+<li><strong>公式：</strong> <span class="math inline"><em>h</em>(<em>θ</em><sub><em>d</em></sub>) = (1 − 0) ⋅ (<em>θ</em><sub><em>d</em></sub>/<em>s</em>) + 0 ⋅ <em>θ</em><sub><em>d</em></sub> = <em>θ</em><sub><em>d</em></sub>/<em>s</em></span>。</li>
 <li><strong>结论：</strong> <strong>这等同于纯粹的 PI</strong> 。YaRN <em>只</em>对这些最容易产生 OOD 错误的低频维度进行插值，完美解决了外推问题 。</li>
-</ul>
-</li>
+</ul></li>
 <li>模式 2：高频维度 (High Frequencies)
 <ul>
-<li><strong>条件：</strong> $r &gt; \beta$ (例如 $r &gt; 32$)。这意味着波长 $\lambda_d$ 极短，在原始上下文中“转了超过 32 圈”。这些维度对<em>局部</em>相对位置至关重要。</li>
-<li><strong>计算：</strong> $\gamma® = 1$。</li>
-<li><strong>公式：</strong> $h(\theta_d) = (1-1) \cdot (\theta_d / s) + 1 \cdot \theta_d = \theta_d$。</li>
+<li><strong>条件：</strong> <span class="math inline"><em>r</em> &gt; <em>β</em></span> (例如 <span class="math inline"><em>r</em> &gt; 32</span>)。这意味着波长 <span class="math inline"><em>λ</em><sub><em>d</em></sub></span> 极短，在原始上下文中“转了超过 32 圈”。这些维度对<em>局部</em>相对位置至关重要。</li>
+<li><strong>计算：</strong> <span class="math inline"><em>γ</em>(<em>r</em>) = 1</span>。</li>
+<li><strong>公式：</strong> <span class="math inline"><em>h</em>(<em>θ</em><sub><em>d</em></sub>) = (1 − 1) ⋅ (<em>θ</em><sub><em>d</em></sub>/<em>s</em>) + 1 ⋅ <em>θ</em><sub><em>d</em></sub> = <em>θ</em><sub><em>d</em></sub></span>。</li>
 <li><strong>结论：</strong> <strong>频率保持不变</strong> 10。YaRN <em>完全保留</em>了这些对区分近距离 token 至关重要的高频维度，完美解决了 PI 导致的“近距离混淆”问题 。</li>
-</ul>
-</li>
+</ul></li>
 <li><strong>模式 3：过渡维度 (Transition)</strong>
 <ul>
-<li><strong>条件：</strong> $\alpha \le r \le \beta$。</li>
-<li><strong>计算：</strong> $0 &lt; \gamma® &lt; 1$。</li>
-<li><strong>公式：</strong> $h(\theta_d)$ 是 $\theta_d/s$ 和 $\theta_d$ 之间的平滑线性插值。这确保了从“插值”到“保留”的过渡是平滑的，避免了在频率空间中产生突兀的“断崖”。</li>
-</ul>
-</li>
+<li><strong>条件：</strong> <span class="math inline"><em>α</em> ≤ <em>r</em> ≤ <em>β</em></span>。</li>
+<li><strong>计算：</strong> <span class="math inline">0 &lt; <em>γ</em>(<em>r</em>) &lt; 1</span>。</li>
+<li><strong>公式：</strong> <span class="math inline"><em>h</em>(<em>θ</em><sub><em>d</em></sub>)</span> 是 <span class="math inline"><em>θ</em><sub><em>d</em></sub>/<em>s</em></span> 和 <span class="math inline"><em>θ</em><sub><em>d</em></sub></span> 之间的平滑线性插值。这确保了从“插值”到“保留”的过渡是平滑的，避免了在频率空间中产生突兀的“断崖”。</li>
+</ul></li>
 </ol>
 <p>综上所述，“NTK-by-parts” 保留了 PI 的“插值”稳定性（用于低频），又获得了 NTK-aware 的“高频保留”优势（用于高频），同时规避了两者的所有缺点。</p>
-<p><img src="image9.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
-<h2 id="第四部分：YaRN-的核心机制-II-——-注意力缩放与温度调节">第四部分：YaRN 的核心机制 (II) —— 注意力缩放与温度调节</h2>
+<p><img src="image9.jpg" srcset="/img/loading.gif" lazyload /></p>
+<h2 id="第四部分yarn-的核心机制-ii-注意力缩放与温度调节">第四部分：YaRN 的核心机制 (II) —— 注意力缩放与温度调节</h2>
 <p>“NTK-by-parts” 解决了位置编码问题，但这只完成了 YaRN 拼图的一半 。</p>
-<h3 id="4-1-新问题：长上下文中的注意力熵-Entropy">4.1 新问题：长上下文中的注意力熵 (Entropy)</h3>
+<h3 id="新问题长上下文中的注意力熵-entropy">4.1 新问题：长上下文中的注意力熵 (Entropy)</h3>
 <ul>
-<li>
-<p><strong>问题：</strong> 当上下文被“压缩”（即使是智能压缩）时，token 在 RoPE 嵌入空间中的有效“距离”被拉近了 。</p>
-</li>
-<li>
-<p><strong>后果：</strong> $q \cdot k$ 的点积（即 logits）的方差会增大，导致 $\text{softmax}$ 函数的输入值变得非常大。</p>
-</li>
-<li>
-<p>**“过度锐化” (Overly “sharp”)：**当 $\text{softmax}$ 函数的输入值差异巨大时（例如 $\text{softmax}()$），其输出会“坍缩”到一个单一的最大值上。</p>
-</li>
-<li>
-<p><strong>致命缺陷：</strong> 这种过度锐化的注意力分布意味着模型“过度自信”，只关注极少数几个 token，而失去了对全局上下文的关注能力。这对于需要整合长距离信息的任务是致命的。</p>
-</li>
+<li><p><strong>问题：</strong> 当上下文被“压缩”（即使是智能压缩）时，token 在 RoPE 嵌入空间中的有效“距离”被拉近了 。</p></li>
+<li><p><strong>后果：</strong> <span class="math inline"><em>q</em> ⋅ <em>k</em></span> 的点积（即 logits）的方差会增大，导致 <span class="math inline">softmax</span> 函数的输入值变得非常大。</p></li>
+<li><p><strong>“过度锐化” (Overly “sharp”)：</strong>当 <span class="math inline">softmax</span> 函数的输入值差异巨大时（例如 <span class="math inline">softmax()</span>），其输出会“坍缩”到一个单一的最大值上。</p></li>
+<li><p><strong>致命缺陷：</strong> 这种过度锐化的注意力分布意味着模型“过度自信”，只关注极少数几个 token，而失去了对全局上下文的关注能力。这对于需要整合长距离信息的任务是致命的。</p></li>
 </ul>
-<h3 id="4-2-YaRN-的解决方案：引入温度-t">4.2 YaRN 的解决方案：引入温度 $t$</h3>
-<p>解决 $\text{softmax}$ 过度锐化的标准方法是使用“温度” (Temperature) $t$ 。</p>
+<h3 id="yarn-的解决方案引入温度-t">4.2 YaRN 的解决方案：引入温度 <span class="math inline"><em>t</em></span></h3>
+<p>解决 <span class="math inline">softmax</span> 过度锐化的标准方法是使用“温度” (Temperature) <span class="math inline"><em>t</em></span> 。</p>
 <ul>
 <li><strong>数学公式：</strong> YaRN 修改了标准的注意力计算公式：
 <ul>
-<li>标准注意力： $\text{softmax}\left(\frac{q^T_m k_n}{\sqrt{|D|}}\right)$</li>
-<li>YaRN 注意力： $\text{softmax}\left(\frac{q^T_m k_n}{t \sqrt{|D|}}\right)$</li>
+<li>标准注意力： <span class="math inline">$\text{softmax}\left(\frac{q^T_m k_n}{\sqrt{|D|}}\right)$</span></li>
+<li>YaRN 注意力： <span class="math inline">$\text{softmax}\left(\frac{q^T_m k_n}{t \sqrt{|D|}}\right)$</span></li>
+</ul></li>
+<li><strong>效果：</strong> 当 <span class="math inline"><em>t</em> &gt; 1</span> 时，它会“压平” logits，使 <span class="math inline">softmax</span> 的输出更平滑（熵更高），从而恢复模型对全局上下文的敏感性，降低困惑度。</li>
 </ul>
-</li>
-<li><strong>效果：</strong> 当 $t &gt; 1$ 时，它会“压平” logits，使 $\text{softmax}$ 的输出更平滑（熵更高），从而恢复模型对全局上下文的敏感性，降低困惑度。</li>
-</ul>
-<h3 id="4-3-经验公式：-t-与-s-的关系">4.3 经验公式：$t$ 与 $s$ 的关系</h3>
-<p>温度 $t$ 不应是一个固定值，它必须随着上下文缩放因子 $s$ 的增加而增加。通过在 Llama 模型上拟合困惑度 PPL 与缩放因子 $s$ 的曲线，YaRN 的作者们得出了以下经验公式：</p>
-<p>$$<br>
-\frac{1}{\sqrt{t}} = 0.1 \ln(s) + 1<br>
-$$<br>
-<em>注：</em> 这一公式中的 $0.1$ 是一个可调参数；例如，后续的 DeepSeek-V2 模型将其修改为 $0.0707$ ，但这表明 $1/\sqrt{t}$ 与 $\ln(s)$ 之间的对数关系是关键。</p>
-<h3 id="4-4-零开销-实现技巧-The-“Length-Scaling”-Trick">4.4 &quot;零开销&quot;实现技巧 (The “Length Scaling” Trick)</h3>
-<p><strong>挑战：</strong> 直接修改 $\text{softmax}$ 公式（如上所示）意味着需要重写底层的注意力核（Kernel）。这将导致无法使用 Flash Attention 2 等高度优化的库，从而牺牲性能。</p>
+<h3 id="经验公式t-与-s-的关系">4.3 经验公式：<span class="math inline"><em>t</em></span> 与 <span class="math inline"><em>s</em></span> 的关系</h3>
+<p>温度 <span class="math inline"><em>t</em></span> 不应是一个固定值，它必须随着上下文缩放因子 <span class="math inline"><em>s</em></span> 的增加而增加。通过在 Llama 模型上拟合困惑度 PPL 与缩放因子 <span class="math inline"><em>s</em></span> 的曲线，YaRN 的作者们得出了以下经验公式：</p>
+<p><span class="math display">$$
+\frac{1}{\sqrt{t}} = 0.1 \ln(s) + 1
+$$</span> <em>注：</em> 这一公式中的 <span class="math inline">0.1</span> 是一个可调参数；例如，后续的 DeepSeek-V2 模型将其修改为 <span class="math inline">0.0707</span> ，但这表明 <span class="math inline">$1/\sqrt{t}$</span> 与 <span class="math inline">ln (<em>s</em>)</span> 之间的对数关系是关键。</p>
+<h3 id="零开销实现技巧-the-length-scaling-trick">4.4 “零开销”实现技巧 (The “Length Scaling” Trick)</h3>
+<p><strong>挑战：</strong> 直接修改 <span class="math inline">softmax</span> 公式（如上所示）意味着需要重写底层的注意力核（Kernel）。这将导致无法使用 Flash Attention 2 等高度优化的库，从而牺牲性能。</p>
 <p>YaRN 采用了一种极其巧妙的数学等价来实现零开销：</p>
-<ol>
-<li>
-<p>数学等价：</p>
-<p>$$<br>
-\frac{q^T k}{t} = \frac{(q / \sqrt{t})^T (k / \sqrt{t})}{1}<br>
-$$</p>
-</li>
-<li>
-<p><strong>实现：</strong> 我们不需要修改 $\text{softmax}$。我们只需要在 $q$ 和 $k$ 向量进入点积运算<em>之前</em>，将它们分别乘以一个常数因子 $\frac{1}{\sqrt{t}}$ 。</p>
-</li>
-<li>
-<p><strong>优化：</strong> $\frac{1}{\sqrt{t}}$ 是一个常数（由 $s$ 决定）。RoPE 嵌入 $R_m$ 通常也是预先计算并缓存的。</p>
-</li>
-<li>
-<p><strong>“烘焙” (Bake-in)：</strong> YaRN 将这个 $\frac{1}{\sqrt{t}}$ 缩放因子<em>直接“烘焙”到预计算的 RoPE 旋转嵌入中</em>。</p>
-</li>
-<li>
-<p><strong>结果：</strong> 这种“注意力缩放”是通过修改预计算的位置嵌入缓存来实现的。底层的注意力代码（如 Flash Attention）保持不变。因此，该技术在训练和推理期间<strong>完全没有（Zero）额外开销</strong>。</p>
-</li>
+<ol type="1">
+<li><p>数学等价：</p>
+<p><span class="math display">$$
+ \frac{q^T k}{t} = \frac{(q / \sqrt{t})^T (k / \sqrt{t})}{1}
+ $$</span></p></li>
+<li><p><strong>实现：</strong> 我们不需要修改 <span class="math inline">softmax</span>。我们只需要在 <span class="math inline"><em>q</em></span> 和 <span class="math inline"><em>k</em></span> 向量进入点积运算<em>之前</em>，将它们分别乘以一个常数因子 <span class="math inline">$\frac{1}{\sqrt{t}}$</span> 。</p></li>
+<li><p><strong>优化：</strong> <span class="math inline">$\frac{1}{\sqrt{t}}$</span> 是一个常数（由 <span class="math inline"><em>s</em></span> 决定）。RoPE 嵌入 <span class="math inline"><em>R</em><sub><em>m</em></sub></span> 通常也是预先计算并缓存的。</p></li>
+<li><p><strong>“烘焙” (Bake-in)：</strong> YaRN 将这个 <span class="math inline">$\frac{1}{\sqrt{t}}$</span> 缩放因子<em>直接“烘焙”到预计算的 RoPE 旋转嵌入中</em>。</p></li>
+<li><p><strong>结果：</strong> 这种“注意力缩放”是通过修改预计算的位置嵌入缓存来实现的。底层的注意力代码（如 Flash Attention）保持不变。因此，该技术在训练和推理期间<strong>完全没有（Zero）额外开销</strong>。</p></li>
 </ol>
-<h3 id="4-5-YaRN-完整定义">4.5 YaRN 完整定义</h3>
+<h3 id="yarn-完整定义">4.5 YaRN 完整定义</h3>
 <p>YaRN 是一个“组合拳”，它由两个核心组件构成： <strong>YaRN = “NTK-by-parts” 插值 + 注意力温度缩放</strong> 。</p>
 <p>“NTK-by-parts” 修正了<em>位置编码</em>的频率，而“注意力缩放”修正了<em>注意力分数</em>的动态范围。</p>
-<h2 id="第五部分：实证分析——YaRN-的性能表现">第五部分：实证分析——YaRN 的性能表现</h2>
+<h2 id="第五部分实证分析yarn-的性能表现">第五部分：实证分析——YaRN 的性能表现</h2>
 <p>YaRN 的设计在理论上是完备的，其在基准测试中的表现也证实了这一点。</p>
-<h3 id="5-1-关键基准-1-：长序列语言建模-PPL">5.1 关键基准 (1)：长序列语言建模 (PPL)</h3>
+<h3 id="关键基准-1长序列语言建模-ppl">5.1 关键基准 (1)：长序列语言建模 (PPL)</h3>
 <ul>
-<li><strong>任务：</strong> 评估模型在超长文本（如 Proof-pile ）上的困惑度 (PPL)。PPL 越低，模型对文本的理解越流畅。</li>
-<li><strong>模型：</strong> <code>Yarn-Llama-2-7b-64k</code> 和 <code>Yarn-Llama-2-13b-128k</code> 。</li>
-<li><strong>结果：</strong> YaRN 模型的 PPL 曲线在整个 128k 上下文窗口内保持了强劲的性能（即 PPL 保持低位或持续下降），成功地将 Llama 2 的有效上下文扩展到 128k 。</li>
-<li>“训练短，测试长” (Train short, test long) 10： 一个惊人的发现是：目标为 128k (s=32) 的 YaRN 模型是在<em>长度仅为 64k</em> 的数据上进行微调的。然而，事实上这些模型在 64k 到 128k 范围内的 PPL 仍然<em>持续下降</em>。 这证明了 YaRN 不仅仅是“记住”了 64k 的长序列。模型在微调中实际上是学会了 $\gamma®$ 和 $\ln(s)$ 所定义的<em>新的缩放定律</em>。由于这些定律是平滑且连续的，模型能够将这种“定律”<em>泛化</em>（外推）到它在微调中也未见过的、更长的 128k 序列。这对于在计算受限下训练长下文模型至关重要。</li>
-</ul>
-<h3 id="5-2-关键基准-2-：“大海捞针”-Passkey-Retrieval">5.2 关键基准 (2)：“大海捞针” (Passkey Retrieval)</h3>
-<ul>
-<li><strong>任务：</strong> 这是对长上下文“注意力”的压力测试 。在一个长达 128k 的“干草堆”（无意义文本）中，能否找出一个随机插入的“针”（一个简单的五位数密码）。</li>
-<li><strong>测试目的：</strong> 验证模型是否在<em>整个</em>上下文（尤其是中间部分）都保持了注意力，以对抗“U 型”注意力衰减问题（即模型只关注开头和结尾） 。</li>
-<li><strong>结果：</strong> YaRN 微调的 7B 和 13B 模型（128k 上下文）在<em>整个 128k 窗口</em> 内，以 <strong>&gt; 99%</strong> 的高精度通过了 Passkey 检索任务 。</li>
-<li><strong>原因分析：</strong> 这种近乎完美的检索能力归功于 YaRN 的双重机制。
-<ol>
-<li>“NTK-by-parts” 保留了高频信息，确保了模型在任何局部（无论是在 50k 还是 100k）都能精确地“看清” passkey。</li>
-<li>“Attention Scaling” 确保了注意力熵足够高 ，使模型不会“忽视”掉中间的大块上下文。</li>
-</ol>
+<li><strong>任务：</strong> 评估模型在超长文本（如 Proof-pile ）上的困惑度 (PPL)。PPL 越低，模型对文本的理解越流畅。<br />
 </li>
+<li><strong>模型：</strong> <code>Yarn-Llama-2-7b-64k</code> 和 <code>Yarn-Llama-2-13b-128k</code> 。<br />
+</li>
+<li><strong>结果：</strong> YaRN 模型的 PPL 曲线在整个 128k 上下文窗口内保持了强劲的性能（即 PPL 保持低位或持续下降），成功地将 Llama 2 的有效上下文扩展到 128k 。<br />
+</li>
+<li>“训练短，测试长” (Train short, test long) 10： 一个惊人的发现是：目标为 128k (s=32) 的 YaRN 模型是在<em>长度仅为 64k</em> 的数据上进行微调的。然而，事实上这些模型在 64k 到 128k 范围内的 PPL 仍然<em>持续下降</em>。 这证明了 YaRN 不仅仅是“记住”了 64k 的长序列。模型在微调中实际上是学会了 <span class="math inline"><em>γ</em>(<em>r</em>)</span> 和 <span class="math inline">ln (<em>s</em>)</span> 所定义的<em>新的缩放定律</em>。由于这些定律是平滑且连续的，模型能够将这种“定律”<em>泛化</em>（外推）到它在微调中也未见过的、更长的 128k 序列。这对于在计算受限下训练长下文模型至关重要。</li>
 </ul>
-<h3 id="5-3-关键基准-3-：短上下文基准-The-“Cost”">5.3 关键基准 (3)：短上下文基准 (The “Cost”)</h3>
+<h3 id="关键基准-2大海捞针-passkey-retrieval">5.2 关键基准 (2)：“大海捞针” (Passkey Retrieval)</h3>
 <ul>
-<li><strong>任务：</strong> 评估 YaRN 模型在 Hugging Face Open LLM 排行榜上的标准基准（如 ARC, HellaSwag, MMLU, TruthfulQA ）上的表现。</li>
-<li><strong>测试目的：</strong> 扩展上下文窗口（例如到 128k）是否以牺牲模型<em>原始</em>预训练能力（即短上下文推理）为代价？ 。</li>
+<li><strong>任务：</strong> 这是对长上下文“注意力”的压力测试 。在一个长达 128k 的“干草堆”（无意义文本）中，能否找出一个随机插入的“针”（一个简单的五位数密码）。<br />
+</li>
+<li><strong>测试目的：</strong> 验证模型是否在<em>整个</em>上下文（尤其是中间部分）都保持了注意力，以对抗“U 型”注意力衰减问题（即模型只关注开头和结尾） 。</li>
+<li><strong>结果：</strong> YaRN 微调的 7B 和 13B 模型（128k 上下文）在<em>整个 128k 窗口</em> 内，以 <strong>&gt; 99%</strong> 的高精度通过了 Passkey 检索任务 。<br />
+</li>
+<li><strong>原因分析：</strong> 这种近乎完美的检索能力归功于 YaRN 的双重机制。
+<ol type="1">
+<li>“NTK-by-parts” 保留了高频信息，确保了模型在任何局部（无论是在 50k 还是 100k）都能精确地“看清” passkey。<br />
+</li>
+<li>“Attention Scaling” 确保了注意力熵足够高 ，使模型不会“忽视”掉中间的大块上下文。</li>
+</ol></li>
+</ul>
+<h3 id="关键基准-3短上下文基准-the-cost">5.3 关键基准 (3)：短上下文基准 (The “Cost”)</h3>
+<ul>
+<li><strong>任务：</strong> 评估 YaRN 模型在 Hugging Face Open LLM 排行榜上的标准基准（如 ARC, HellaSwag, MMLU, TruthfulQA ）上的表现。<br />
+</li>
+<li><strong>测试目的：</strong> 扩展上下文窗口（例如到 128k）是否以牺牲模型<em>原始</em>预训练能力（即短上下文推理）为代价？ 。<br />
+</li>
 <li><strong>结果：</strong> 结果是惊人的：“我们观察到 YaRN 模型与其各自的 Llama 2 基线之间几乎没有性能下降” 。</li>
 </ul>
 <p>下面的表格（基于 中的 Table 3）定量地证明了 YaRN 相比其他方法的“无缺点”特性：</p>
 <p><strong>表 1：YaRN 与 Llama 2 基线及其他扩展方法在短上下文基准上的性能对比 (Llama 7B)</strong></p>
 <table>
 <thead>
-<tr>
+<tr class="header">
 <th>模型</th>
 <th>目标上下文</th>
 <th>扩展方法</th>
@@ -604,7 +541,7 @@ $$</p>
 </tr>
 </thead>
 <tbody>
-<tr>
+<tr class="odd">
 <td>Llama 2</td>
 <td>4k</td>
 <td>(基线)</td>
@@ -613,7 +550,7 @@ $$</p>
 <td>43.8</td>
 <td>39.0</td>
 </tr>
-<tr>
+<tr class="even">
 <td>Together</td>
 <td>32k</td>
 <td>PI</td>
@@ -622,7 +559,7 @@ $$</p>
 <td>43.3</td>
 <td>39.2</td>
 </tr>
-<tr>
+<tr class="odd">
 <td>Code Llama</td>
 <td>100k</td>
 <td>NTK</td>
@@ -631,7 +568,7 @@ $$</p>
 <td>31.1</td>
 <td>37.8</td>
 </tr>
-<tr>
+<tr class="even">
 <td><strong>YaRN (s=32)</strong></td>
 <td><strong>128k</strong></td>
 <td><strong>YaRN</strong></td>
@@ -643,90 +580,79 @@ $$</p>
 </tbody>
 </table>
 <p><strong>表格分析：</strong> 此表格是证明 YaRN 优越性的关键证据。</p>
-<ol>
-<li><strong>PI (Together 32k)</strong> 在所有指标上都显示出轻微但明显的性能下降，尤其是在 ARC-c 上 。</li>
-<li><strong>NTK-aware (Code Llama 100k)</strong> 显示出<em>灾难性</em>的性能下降，证实了其在微调后的不稳定性 。</li>
+<ol type="1">
+<li><strong>PI (Together 32k)</strong> 在所有指标上都显示出轻微但明显的性能下降，尤其是在 ARC-c 上 。<br />
+</li>
+<li><strong>NTK-aware (Code Llama 100k)</strong> 显示出<em>灾难性</em>的性能下降，证实了其在微调后的不稳定性 。<br />
+</li>
 <li><strong>YaRN (128k)</strong> 的分数几乎与 4k 基线<em>完全相同</em>，甚至在 Hellaswag 上略有提升。</li>
 </ol>
 <p>这无可辩驳地证明了 YaRN 首次实现了在<em>不牺牲短上下文性能</em>的前提下，<em>高效地</em>将上下文扩展到 128k 。</p>
-<h2 id="第六部分：实践与应用指南">第六部分：实践与应用指南</h2>
-<h3 id="6-1-高效微调：YaRN-的计算优势">6.1 高效微调：YaRN 的计算优势</h3>
+<h2 id="第六部分实践与应用指南">第六部分：实践与应用指南</h2>
+<h3 id="高效微调yarn-的计算优势">6.1 高效微调：YaRN 的计算优势</h3>
 <p>YaRN 不仅性能卓越，而且“计算高效” (compute-efficient) 。</p>
 <ul>
-<li><strong>定量数据：</strong> YaRN 声称比以前的方法（如 PI）需要<strong>少 10 倍的 token</strong> 和<strong>少 2.5 倍的训练步数</strong> 。</li>
+<li><strong>定量数据：</strong> YaRN 声称比以前的方法（如 PI）需要<strong>少 10 倍的 token</strong> 和<strong>少 2.5 倍的训练步数</strong> 。<br />
+</li>
 <li><strong>实例：</strong> <code>NousResearch/Yarn-Llama-2-7b-64k</code> 模型仅在 PG19 数据集的一个子集上进行了 <strong>400 步</strong> 的进一步预训练，就实现了 64k 的上下文窗口 。这证明了 YaRN 微调的极高效率 。</li>
 </ul>
-<h3 id="6-2-如何在-Hugging-Face-Transformers-中使用-YaRN">6.2 如何在 Hugging Face Transformers 中使用 YaRN</h3>
+<h3 id="如何在-hugging-face-transformers-中使用-yarn">6.2 如何在 Hugging Face Transformers 中使用 YaRN</h3>
 <p>要在 <code>transformers</code> 库中正确加载和使用 YaRN 模型（如 <code>NousResearch/Yarn-Llama-2-7b-64k</code>），必须满足以下依赖和配置：</p>
 <ul>
-<li>
-<p><strong>关键依赖：</strong></p>
-<ol>
-<li><strong>Flash Attention 2 (FA2)：</strong> YaRN 兼容 FA2 。要使用 YaRN 模型，必须安装 FA2 (<code>pip install flash-attn</code>) 。</li>
+<li><p><strong>关键依赖：</strong></p>
+<ol type="1">
+<li><strong>Flash Attention 2 (FA2)：</strong> YaRN 兼容 FA2 。要使用 YaRN 模型，必须安装 FA2 (<code>pip install flash-attn</code>) 。<br />
+</li>
 <li><strong>Rotary Extensions：</strong> 需要安装 HazyResearch 的 <code>csrc/rotary</code> 扩展库 (<code>pip install git+https://github.com/HazyResearch/flash-attention.git#subdirectory=csrc/rotary</code>) 。</li>
-</ol>
-</li>
-<li>
-<p><strong><code>config.json</code> 配置：</strong> 要在 <code>transformers</code> 库中启用 YaRN 缩放，需要在模型的 <code>config.json</code> 文件中添加（或修改）<code>rope_scaling</code> 字典 。 <strong>配置示例：</strong></p>
+</ol></li>
+<li><p><strong><code>config.json</code> 配置：</strong> 要在 <code>transformers</code> 库中启用 YaRN 缩放，需要在模型的 <code>config.json</code> 文件中添加（或修改）<code>rope_scaling</code> 字典 。 <strong>配置示例：</strong></p>
 <p>JSON</p>
-  <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs json"><span class="hljs-attr">&quot;rope_scaling&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span><br>    <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;yarn&quot;</span><span class="hljs-punctuation">,</span><br>    <span class="hljs-attr">&quot;factor&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">16.0</span><span class="hljs-punctuation">,</span><br>    <span class="hljs-attr">&quot;original_max_position_embeddings&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">4096</span><br><span class="hljs-punctuation">&#125;</span><br></code></pre></td></tr></table></figure>
+<p><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs json"><span class="hljs-attr">&quot;rope_scaling&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span><br>    <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;yarn&quot;</span><span class="hljs-punctuation">,</span><br>    <span class="hljs-attr">&quot;factor&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">16.0</span><span class="hljs-punctuation">,</span><br>    <span class="hljs-attr">&quot;original_max_position_embeddings&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">4096</span><br><span class="hljs-punctuation">&#125;</span><br></code></pre></td></tr></table></figure></p>
 <ul>
-<li><code>&quot;type&quot;: &quot;yarn&quot;</code>： 告知库使用 YaRN 的插值逻辑（即 “NTK-by-parts” + “Attention Scaling”）。</li>
-<li><code>&quot;factor&quot;: 16.0&quot;</code>： 目标缩放因子 <em>s</em> (例如 65536/4096=16.0）。</li>
-<li><code>&quot;original_max_position_embeddings&quot;: 4096&quot;</code>： <strong>（关键）</strong> 必须是<em>原始</em>预训练上下文长度 <em>L</em>。</li>
+<li><code>"type": "yarn"</code>： 告知库使用 YaRN 的插值逻辑（即 “NTK-by-parts” + “Attention Scaling”）。</li>
+<li><code>"factor": 16.0"</code>： 目标缩放因子 <em>s</em> (例如 65536/4096=16.0）。</li>
+<li><code>"original_max_position_embeddings": 4096"</code>： <strong>（关键）</strong> 必须是<em>原始</em>预训练上下文长度 <em>L</em>。</li>
+</ul></li>
+<li><p><strong>实现的陷阱：</strong> 社区讨论 指出，不同库（如 <code>transformers</code> 和 <code>vLLM</code>）在读取这些配置时可能存在不一致。例如，<code>transformers</code> 的 <code>modeling_rope_utils.py</code> 过去可能错误地读取 <code>config.max_position_embeddings</code>（例如 64k）而不是 <code>config.original_max_position_embeddings</code>（4k）来计算缩放，这会导致完全错误的频率计算。因此，在实践中，必须<em>仔细检查</em>所用库的 RoPE 工具函数，以确保它正确地使用了 <span class="math inline"><em>s</em></span> 和 <span class="math inline"><em>L</em></span> 。</p></li>
 </ul>
-</li>
-<li>
-<p><strong>实现的陷阱：</strong> 社区讨论 指出，不同库（如 <code>transformers</code> 和 <code>vLLM</code>）在读取这些配置时可能存在不一致。例如，<code>transformers</code> 的 <code>modeling_rope_utils.py</code> 过去可能错误地读取 <code>config.max_position_embeddings</code>（例如 64k）而不是 <code>config.original_max_position_embeddings</code>（4k）来计算缩放，这会导致完全错误的频率计算。因此，在实践中，必须<em>仔细检查</em>所用库的 RoPE 工具函数，以确保它正确地使用了 $s$ 和 $L$ 。</p>
-</li>
-</ul>
-<h3 id="6-3-Dynamic-YaRN-vs-Static-YaRN-推理时">6.3 Dynamic-YaRN vs. Static-YaRN (推理时)</h3>
+<h3 id="dynamic-yarn-vs.-static-yarn-推理时">6.3 Dynamic-YaRN vs. Static-YaRN (推理时)</h3>
 <p>在推理时，YaRN 有两种截然不同的使用模式：</p>
 <ul>
-<li>
-<p><strong>1. Static-YaRN (静态，用于微调模型)</strong></p>
+<li><p><strong>1. Static-YaRN (静态，用于微调模型)</strong></p>
 <ul>
-<li><strong>描述：</strong> 这是 <code>NousResearch/Yarn-Llama-2-7b-64k</code> 使用的方法。<code>factor</code> 是一个<em>固定</em>值（例如 16.0）。</li>
-<li><strong>优势：</strong> <strong>这是最高效、最推荐的推理方式</strong>。由于 $s$ 固定，所有 RoPE 嵌入（已烘焙了 NTK-by-parts 和温度缩放）都可以被预计算、缓存，并与 KV 缓存 (Key-Value Caching) 完美兼容。</li>
-</ul>
+<li><strong>描述：</strong> 这是 <code>NousResearch/Yarn-Llama-2-7b-64k</code> 使用的方法。<code>factor</code> 是一个<em>固定</em>值（例如 16.0）。<br />
 </li>
-<li>
-<p><strong>2. Dynamic-YaRN (动态，用于非微调模型)</strong></p>
+<li><strong>优势：</strong> <strong>这是最高效、最推荐的推理方式</strong>。由于 <span class="math inline"><em>s</em></span> 固定，所有 RoPE 嵌入（已烘焙了 NTK-by-parts 和温度缩放）都可以被预计算、缓存，并与 KV 缓存 (Key-Value Caching) 完美兼容。</li>
+</ul></li>
+<li><p><strong>2. Dynamic-YaRN (动态，用于非微调模型)</strong></p>
 <ul>
-<li>
-<p><strong>描述：</strong> 这是一种<em>纯推理时</em>技术，无需任何微调即可使用。</p>
-</li>
-<li>
-<p><strong>机理：</strong> 缩放因子 $s = \max(1, L_{current} / L_{original})$ 在<em>每个</em>前向传播步骤中<em>动态</em>更新 。</p>
-</li>
-<li>
-<p><strong>优势：</strong> 无需微调即可将 Llama 2 基线模型的上下文扩展 2 倍以上。</p>
-</li>
-<li>
-<p>严重性能陷阱 (KV 缓存失效)：Dynamic Scaling (动态缩放) 与标准 KV 缓存不兼容 。<strong>原因：</strong> KV 缓存依赖于 $k_n$（包含 RoPE 旋转 $R_n$）在 $n$ 步计算后是恒定的。但在 Dynamic Scaling 中，RoPE 旋转 $R_n$ 依赖于 $s$，而 $s$ 依赖于 $L_{current}$（当前总长度）。当 $L_{current}$ 从 100 变为 101 时， $s$ 发生变化，导致 $n=1…100$ 的所有 $R_n$ 全部失效。</p>
-<p>后果： 必须在每一步都对整个 KV 缓存重新应用 RoPE 旋转 。这会带来巨大的计算开销，可能完全抵消 KV 缓存带来的速度提升。</p>
-</li>
+<li><p><strong>描述：</strong> 这是一种<em>纯推理时</em>技术，无需任何微调即可使用。</p></li>
+<li><p><strong>机理：</strong> 缩放因子 <span class="math inline"><em>s</em> = max (1, <em>L</em><sub><em>c</em><em>u</em><em>r</em><em>r</em><em>e</em><em>n</em><em>t</em></sub>/<em>L</em><sub><em>o</em><em>r</em><em>i</em><em>g</em><em>i</em><em>n</em><em>a</em><em>l</em></sub>)</span> 在<em>每个</em>前向传播步骤中<em>动态</em>更新 。</p></li>
+<li><p><strong>优势：</strong> 无需微调即可将 Llama 2 基线模型的上下文扩展 2 倍以上。</p></li>
+<li><p>严重性能陷阱 (KV 缓存失效)：Dynamic Scaling (动态缩放) 与标准 KV 缓存不兼容 。<strong>原因：</strong> KV 缓存依赖于 <span class="math inline"><em>k</em><sub><em>n</em></sub></span>（包含 RoPE 旋转 <span class="math inline"><em>R</em><sub><em>n</em></sub></span>）在 <span class="math inline"><em>n</em></span> 步计算后是恒定的。但在 Dynamic Scaling 中，RoPE 旋转 <span class="math inline"><em>R</em><sub><em>n</em></sub></span> 依赖于 <span class="math inline"><em>s</em></span>，而 <span class="math inline"><em>s</em></span> 依赖于 <span class="math inline"><em>L</em><sub><em>c</em><em>u</em><em>r</em><em>r</em><em>e</em><em>n</em><em>t</em></sub></span>（当前总长度）。当 <span class="math inline"><em>L</em><sub><em>c</em><em>u</em><em>r</em><em>r</em><em>e</em><em>n</em><em>t</em></sub></span> 从 100 变为 101 时， <span class="math inline"><em>s</em></span> 发生变化，导致 <span class="math inline"><em>n</em> = 1...100</span> 的所有 <span class="math inline"><em>R</em><sub><em>n</em></sub></span> 全部失效。</p>
+<p>后果： 必须在每一步都对整个 KV 缓存重新应用 RoPE 旋转 。这会带来巨大的计算开销，可能完全抵消 KV 缓存带来的速度提升。</p></li>
 </ul>
-<p><strong>实践建议：</strong> 应优先使用 <strong>Static-YaRN</strong>（即使用 YaRN <em>微调</em> 的模型），而非 Dynamic-YaRN。</p>
-</li>
+<p><strong>实践建议：</strong> 应优先使用 <strong>Static-YaRN</strong>（即使用 YaRN <em>微调</em> 的模型），而非 Dynamic-YaRN。</p></li>
 </ul>
-<h2 id="第七部分：总结——YaRN-的贡献与未来">第七部分：总结——YaRN 的贡献与未来</h2>
-<h3 id="7-1-总结：为什么-YaRN-胜出？">7.1 总结：为什么 YaRN 胜出？</h3>
+<h2 id="第七部分总结yarn-的贡献与未来">第七部分：总结——YaRN 的贡献与未来</h2>
+<h3 id="总结为什么-yarn-胜出">7.1 总结：为什么 YaRN 胜出？</h3>
 <p>YaRN 不是一个单一的技巧，而是对上下文扩展问题的一次<em>系统性</em>的、双管齐下的解决方案。它的成功在于它同时解决了两个独立但相关的问题：</p>
-<ol>
+<ol type="1">
 <li><strong>理论完备性：</strong>
 <ul>
-<li><strong>“NTK-by-parts”</strong> 精确地识别并分别解决了高频（保留）和低频（插值）维度的问题，解决了<em>位置编码</em>的 OOD 和分辨率损失问题。</li>
-<li><strong>“Attention Scaling”</strong> 解决了在长下文中由压缩引起的<em>注意力动力学</em>的熵崩溃问题 。</li>
-</ul>
+<li><strong>“NTK-by-parts”</strong> 精确地识别并分别解决了高频（保留）和低频（插值）维度的问题，解决了<em>位置编码</em>的 OOD 和分辨率损失问题。<br />
 </li>
+<li><strong>“Attention Scaling”</strong> 解决了在长下文中由压缩引起的<em>注意力动力学</em>的熵崩溃问题 。<br />
+</li>
+</ul></li>
 <li><strong>实践高效性：</strong>
 <ul>
-<li><strong>训练：</strong> 训练成本极低（10 倍更少 token, 400 步） 。</li>
-<li><strong>推理：</strong> “零开销” 并与 Flash Attention 2 兼容 。</li>
-<li><strong>性能：</strong> 在长上下文（PPL, Passkey） 和短上下文（MMLU, ARC） 上均达到 SOTA 或与基线持平。</li>
-</ul>
+<li><strong>训练：</strong> 训练成本极低（10 倍更少 token, 400 步） 。<br />
 </li>
+<li><strong>推理：</strong> “零开销” 并与 Flash Attention 2 兼容 。<br />
+</li>
+<li><strong>性能：</strong> 在长上下文（PPL, Passkey） 和短上下文（MMLU, ARC） 上均达到 SOTA 或与基线持平。</li>
+</ul></li>
 </ol>
 
                 
@@ -884,6 +810,7 @@ $$</p>
 
   
   
+
 
 
 
@@ -1077,6 +1004,49 @@ $$</p>
 
 
   <script>Fluid.plugins.imageCaption();</script>
+
+  
+      <script>
+        if (!window.MathJax) {
+          window.MathJax = {
+            tex    : {
+              inlineMath: { '[+]': [['$', '$']] }
+            },
+            loader : {
+              load: ['ui/lazy']
+            },
+            options: {
+              renderActions: {
+                insertedScript: [200, () => {
+                  document.querySelectorAll('mjx-container').forEach(node => {
+                    let target = node.parentNode;
+                    if (target.nodeName.toLowerCase() === 'li') {
+                      target.parentNode.classList.add('has-jax');
+                    }
+                  });
+                }, '', false]
+              }
+            }
+          };
+        } else {
+          MathJax.startup.document.state(0);
+          MathJax.texReset();
+          MathJax.typeset();
+          MathJax.typesetPromise();
+        }
+
+        Fluid.events.registerRefreshCallback(function() {
+          if ('MathJax' in window && MathJax.startup.document && typeof MathJax.startup.document.state === 'function') {
+            MathJax.startup.document.state(0);
+            MathJax.texReset();
+            MathJax.typeset();
+            MathJax.typesetPromise();
+          }
+        });
+      </script>
+    
+
+  <script  src="https://lib.baomitu.com/mathjax/3.2.2/es5/tex-mml-chtml.js" ></script>
 
   <script  src="/js/local-search.js" ></script>
 
