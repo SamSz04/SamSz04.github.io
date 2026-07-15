@@ -1,0 +1,1344 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/logo0.jpg">
+  <link rel="icon" href="/img/logo0.jpg">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Samsz">
+  <meta name="keywords" content="Learn">
+  
+    <meta name="description" content="以一篇 FPGA 与 CGRA 的比较论文为线索，理解深度学习加速器中的计算粒度、数据流、可重构性，以及 CGRA 与 Systolic Array 的真正关系。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从计算粒度与数据流，看 FPGA、CGRA 与脉动阵列">
+<meta property="og:url" content="https://samsz04.github.io/2026/07/14/fpga-cgra-systolic-array-report/index.html">
+<meta property="og:site_name" content="SamSz04&#39;s Blog">
+<meta property="og:description" content="以一篇 FPGA 与 CGRA 的比较论文为线索，理解深度学习加速器中的计算粒度、数据流、可重构性，以及 CGRA 与 Systolic Array 的真正关系。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://samsz04.github.io/2026/07/14/fpga-cgra-systolic-array-report/intro-cgra-architecture.png">
+<meta property="og:image" content="https://samsz04.github.io/2026/07/14/fpga-cgra-systolic-array-report/intro-systolic-array.webp">
+<meta property="og:image" content="https://samsz04.github.io/2026/07/14/fpga-cgra-systolic-array-report/cnn-dataflow-ws-os-nlr-rs.png">
+<meta property="og:image" content="https://samsz04.github.io/2026/07/14/fpga-cgra-systolic-array-report/fpga-cgra-reconfiguration-granularity.jpg">
+<meta property="og:image" content="https://samsz04.github.io/2026/07/14/fpga-cgra-systolic-array-report/cgra-array-and-processing-element.webp">
+<meta property="og:image" content="https://samsz04.github.io/2026/07/14/fpga-cgra-systolic-array-report/cgra-dfg-to-pe-array-mapping.png">
+<meta property="og:image" content="https://samsz04.github.io/2026/07/14/fpga-cgra-systolic-array-report/systolic_array.png">
+<meta property="og:image" content="https://samsz04.github.io/2026/07/14/fpga-cgra-systolic-array-report/architecture-design-space-efficiency-flexibility-performance.jpg">
+<meta property="article:published_time" content="2026-07-14T10:50:00.000Z">
+<meta property="article:modified_time" content="2026-07-15T06:08:39.000Z">
+<meta property="article:author" content="Samsz">
+<meta property="article:tag" content="FPGA">
+<meta property="article:tag" content="CGRA">
+<meta property="article:tag" content="Systolic Array">
+<meta property="article:tag" content="AI Accelerator">
+<meta property="article:tag" content="Computer Architecture">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://samsz04.github.io/2026/07/14/fpga-cgra-systolic-array-report/intro-cgra-architecture.png">
+  
+  
+  
+  <title>从计算粒度与数据流，看 FPGA、CGRA 与脉动阵列 - SamSz04&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"samsz04.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>SamSz04&#39;s blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="从计算粒度与数据流，看 FPGA、CGRA 与脉动阵列"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-07-14 18:50" pubdate>
+          2026年7月14日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          6.3k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          53 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">从计算粒度与数据流，看 FPGA、CGRA 与脉动阵列</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <blockquote>
+<p>以深度学习硬件加速为背景，理解计算粒度、数据流与可重构性之间的取舍</p>
+</blockquote>
+<p>两张架构图摆在一起时，粗粒度可重构阵列（Coarse-Grained Reconfigurable
+Array, CGRA）和脉动阵列（Systolic Array）很容易被看成同一种机器。</p>
+<table>
+  <tr>
+    <td width="50%" align="center" valign="middle">
+      <img src="intro-cgra-architecture.png" srcset="/img/loading.gif" lazyload alt="CGRA 架构：配置存储、局部存储与规则 PE 网格" width="100%">
+      <br><strong>(a) CGRA</strong>
+    </td>
+    <td width="50%" align="center" valign="middle">
+      <img src="intro-systolic-array.webp" srcset="/img/loading.gif" lazyload alt="脉动阵列架构：输入、权重和输出缓冲区包围规则 PE 网格" width="100%">
+      <br><strong>(b) Systolic Array</strong>
+    </td>
+  </tr>
+</table>
+
+<p><em>图 1：CGRA
+与脉动阵列的外观对照。两者都有规则排列的处理单元（Processing Element,
+PE）、相邻节点之间的连线以及阵列外部的存储系统，也都可以加速卷积和矩阵乘法；真正的差异隐藏在
+PE 功能、互连可配置性和数据传播方式之中。</em></p>
+<p>但相似的网格之下，隐藏着两套不同的执行逻辑。</p>
+<p>CGRA
+关心的是：<strong>一个计算图能否被重新映射到不同的处理单元和通信路径上。</strong>
+脉动阵列关心的是：<strong>数据能否按照预先设计的节拍和方向，连续穿过一组规则连接的处理单元。</strong>
+前者把“可重构性”放在中心，后者把“规则的数据传播”推向极致。</p>
+<span id="more"></span>
+
+<p>这一区别也提供了理解现场可编程门阵列（Field-Programmable Gate Array,
+FPGA）、CGRA 与 AI 专用加速器的入口。Jiawei Luo 在 2024 年发表的论文
+<em>A comparative study of FPGA and CGRA technologies in hardware
+acceleration for deep learning</em>，正是从计算粒度和数据流出发，对 FPGA
+与 CGRA 进行了综述式比较。论文认为，在它选取的案例中，FPGA
+往往表现出更高的吞吐量，而 CGRA
+在能效和面积上更有优势。<sup><a href="#ref-1">[1]</a></sup></p>
+<p>这个结论抓住了两类架构的典型取舍，却不能脱离论文的比较条件单独成立。要理解原因，需要先从深度学习加速器真正消耗时间与能量的地方说起。</p>
+<h2 id="深度学习加速器首先是一台数据搬运机器">深度学习加速器首先是一台数据搬运机器</h2>
+<p>卷积神经网络中的大量计算最终都会落到乘加操作上。每个处理单元接收输入激活
+<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.023ex;" xmlns="http://www.w3.org/2000/svg" width="1.197ex" height="1.02ex" role="img" focusable="false" viewBox="0 -441 529 451"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D44E" d="M33 157Q33 258 109 349T280 441Q331 441 370 392Q386 422 416 422Q429 422 439 414T449 394Q449 381 412 234T374 68Q374 43 381 35T402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487Q506 153 506 144Q506 138 501 117T481 63T449 13Q436 0 417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157ZM351 328Q351 334 346 350T323 385T277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q217 26 254 59T298 110Q300 114 325 217T351 328Z"></path></g></g></g></svg></mjx-container></span> 和权重 <span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.025ex;" xmlns="http://www.w3.org/2000/svg" width="1.62ex" height="1.027ex" role="img" focusable="false" viewBox="0 -443 716 454"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D464" d="M580 385Q580 406 599 424T641 443Q659 443 674 425T690 368Q690 339 671 253Q656 197 644 161T609 80T554 12T482 -11Q438 -11 404 5T355 48Q354 47 352 44Q311 -11 252 -11Q226 -11 202 -5T155 14T118 53T104 116Q104 170 138 262T173 379Q173 380 173 381Q173 390 173 393T169 400T158 404H154Q131 404 112 385T82 344T65 302T57 280Q55 278 41 278H27Q21 284 21 287Q21 293 29 315T52 366T96 418T161 441Q204 441 227 416T250 358Q250 340 217 250T184 111Q184 65 205 46T258 26Q301 26 334 87L339 96V119Q339 122 339 128T340 136T341 143T342 152T345 165T348 182T354 206T362 238T373 281Q402 395 406 404Q419 431 449 431Q468 431 475 421T483 402Q483 389 454 274T422 142Q420 131 420 107V100Q420 85 423 71T442 42T487 26Q558 26 600 148Q609 171 620 213T632 273Q632 306 619 325T593 357T580 385Z"></path></g></g></g></svg></mjx-container></span>，将乘积累加到部分和 <span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.439ex;" xmlns="http://www.w3.org/2000/svg" width="1.138ex" height="1.439ex" role="img" focusable="false" viewBox="0 -442 503 636"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D45D" d="M23 287Q24 290 25 295T30 317T40 348T55 381T75 411T101 433T134 442Q209 442 230 378L240 387Q302 442 358 442Q423 442 460 395T497 281Q497 173 421 82T249 -10Q227 -10 210 -4Q199 1 187 11T168 28L161 36Q160 35 139 -51T118 -138Q118 -144 126 -145T163 -148H188Q194 -155 194 -157T191 -175Q188 -187 185 -190T172 -194Q170 -194 161 -194T127 -193T65 -192Q-5 -192 -24 -194H-32Q-39 -187 -39 -183Q-37 -156 -26 -148H-6Q28 -147 33 -136Q36 -130 94 103T155 350Q156 355 156 364Q156 405 131 405Q109 405 94 377T71 316T59 280Q57 278 43 278H29Q23 284 23 287ZM178 102Q200 26 252 26Q282 26 310 49T356 107Q374 141 392 215T411 325V331Q411 405 350 405Q339 405 328 402T306 393T286 380T269 365T254 350T243 336T235 326L232 322Q232 321 229 308T218 264T204 212Q178 106 178 102Z"></path></g></g></g></svg></mjx-container></span>：</p>
+<p><span class="math display"><mjx-container class="MathJax" jax="SVG" display="true"><svg style="vertical-align: -0.471ex;" xmlns="http://www.w3.org/2000/svg" width="17.216ex" height="1.79ex" role="img" focusable="false" viewBox="0 -583 7609.7 791"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mi"><path data-c="1D45D" d="M23 287Q24 290 25 295T30 317T40 348T55 381T75 411T101 433T134 442Q209 442 230 378L240 387Q302 442 358 442Q423 442 460 395T497 281Q497 173 421 82T249 -10Q227 -10 210 -4Q199 1 187 11T168 28L161 36Q160 35 139 -51T118 -138Q118 -144 126 -145T163 -148H188Q194 -155 194 -157T191 -175Q188 -187 185 -190T172 -194Q170 -194 161 -194T127 -193T65 -192Q-5 -192 -24 -194H-32Q-39 -187 -39 -183Q-37 -156 -26 -148H-6Q28 -147 33 -136Q36 -130 94 103T155 350Q156 355 156 364Q156 405 131 405Q109 405 94 377T71 316T59 280Q57 278 43 278H29Q23 284 23 287ZM178 102Q200 26 252 26Q282 26 310 49T356 107Q374 141 392 215T411 325V331Q411 405 350 405Q339 405 328 402T306 393T286 380T269 365T254 350T243 336T235 326L232 322Q232 321 229 308T218 264T204 212Q178 106 178 102Z"></path></g><g data-mml-node="TeXAtom" transform="translate(536,-150) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="1D461" d="M26 385Q19 392 19 395Q19 399 22 411T27 425Q29 430 36 430T87 431H140L159 511Q162 522 166 540T173 566T179 586T187 603T197 615T211 624T229 626Q247 625 254 615T261 596Q261 589 252 549T232 470L222 433Q222 431 272 431H323Q330 424 330 420Q330 398 317 385H210L174 240Q135 80 135 68Q135 26 162 26Q197 26 230 60T283 144Q285 150 288 151T303 153H307Q322 153 322 145Q322 142 319 133Q314 117 301 95T267 48T216 6T155 -11Q125 -11 98 4T59 56Q57 64 57 83V101L92 241Q127 382 128 383Q128 385 77 385H26Z"></path></g><g data-mml-node="mo" transform="translate(361,0)"><path data-c="2B" d="M56 237T56 250T70 270H369V420L370 570Q380 583 389 583Q402 583 409 568V270H707Q722 262 722 250T707 230H409V-68Q401 -82 391 -82H389H387Q375 -82 369 -68V230H70Q56 237 56 250Z"></path></g><g data-mml-node="mn" transform="translate(1139,0)"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path></g></g></g><g data-mml-node="mo" transform="translate(2022.7,0)"><path data-c="3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path></g><g data-mml-node="msub" transform="translate(3078.5,0)"><g data-mml-node="mi"><path data-c="1D45D" d="M23 287Q24 290 25 295T30 317T40 348T55 381T75 411T101 433T134 442Q209 442 230 378L240 387Q302 442 358 442Q423 442 460 395T497 281Q497 173 421 82T249 -10Q227 -10 210 -4Q199 1 187 11T168 28L161 36Q160 35 139 -51T118 -138Q118 -144 126 -145T163 -148H188Q194 -155 194 -157T191 -175Q188 -187 185 -190T172 -194Q170 -194 161 -194T127 -193T65 -192Q-5 -192 -24 -194H-32Q-39 -187 -39 -183Q-37 -156 -26 -148H-6Q28 -147 33 -136Q36 -130 94 103T155 350Q156 355 156 364Q156 405 131 405Q109 405 94 377T71 316T59 280Q57 278 43 278H29Q23 284 23 287ZM178 102Q200 26 252 26Q282 26 310 49T356 107Q374 141 392 215T411 325V331Q411 405 350 405Q339 405 328 402T306 393T286 380T269 365T254 350T243 336T235 326L232 322Q232 321 229 308T218 264T204 212Q178 106 178 102Z"></path></g><g data-mml-node="mi" transform="translate(536,-150) scale(0.707)"><path data-c="1D461" d="M26 385Q19 392 19 395Q19 399 22 411T27 425Q29 430 36 430T87 431H140L159 511Q162 522 166 540T173 566T179 586T187 603T197 615T211 624T229 626Q247 625 254 615T261 596Q261 589 252 549T232 470L222 433Q222 431 272 431H323Q330 424 330 420Q330 398 317 385H210L174 240Q135 80 135 68Q135 26 162 26Q197 26 230 60T283 144Q285 150 288 151T303 153H307Q322 153 322 145Q322 142 319 133Q314 117 301 95T267 48T216 6T155 -11Q125 -11 98 4T59 56Q57 64 57 83V101L92 241Q127 382 128 383Q128 385 77 385H26Z"></path></g></g><g data-mml-node="mo" transform="translate(4142,0)"><path data-c="2B" d="M56 237T56 250T70 270H369V420L370 570Q380 583 389 583Q402 583 409 568V270H707Q722 262 722 250T707 230H409V-68Q401 -82 391 -82H389H387Q375 -82 369 -68V230H70Q56 237 56 250Z"></path></g><g data-mml-node="mi" transform="translate(5142.2,0)"><path data-c="1D44E" d="M33 157Q33 258 109 349T280 441Q331 441 370 392Q386 422 416 422Q429 422 439 414T449 394Q449 381 412 234T374 68Q374 43 381 35T402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487Q506 153 506 144Q506 138 501 117T481 63T449 13Q436 0 417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157ZM351 328Q351 334 346 350T323 385T277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q217 26 254 59T298 110Q300 114 325 217T351 328Z"></path></g><g data-mml-node="mo" transform="translate(5893.4,0)"><path data-c="D7" d="M630 29Q630 9 609 9Q604 9 587 25T493 118L389 222L284 117Q178 13 175 11Q171 9 168 9Q160 9 154 15T147 29Q147 36 161 51T255 146L359 250L255 354Q174 435 161 449T147 471Q147 480 153 485T168 490Q173 490 175 489Q178 487 284 383L389 278L493 382Q570 459 587 475T609 491Q630 491 630 471Q630 464 620 453T522 355L418 250L522 145Q606 61 618 48T630 29Z"></path></g><g data-mml-node="mi" transform="translate(6893.7,0)"><path data-c="1D464" d="M580 385Q580 406 599 424T641 443Q659 443 674 425T690 368Q690 339 671 253Q656 197 644 161T609 80T554 12T482 -11Q438 -11 404 5T355 48Q354 47 352 44Q311 -11 252 -11Q226 -11 202 -5T155 14T118 53T104 116Q104 170 138 262T173 379Q173 380 173 381Q173 390 173 393T169 400T158 404H154Q131 404 112 385T82 344T65 302T57 280Q55 278 41 278H27Q21 284 21 287Q21 293 29 315T52 366T96 418T161 441Q204 441 227 416T250 358Q250 340 217 250T184 111Q184 65 205 46T258 26Q301 26 334 87L339 96V119Q339 122 339 128T340 136T341 143T342 152T345 165T348 182T354 206T362 238T373 281Q402 395 406 404Q419 431 449 431Q468 431 475 421T483 402Q483 389 454 274T422 142Q420 131 420 107V100Q420 85 423 71T442 42T487 26Q558 26 600 148Q609 171 620 213T632 273Q632 306 619 325T593 357T580 385Z"></path></g></g></g></svg></mjx-container></span></p>
+<p>如果只看算式，设计加速器似乎只是不断增加乘法器和加法器。但在真实芯片中，计算单元必须先拿到正确的权重和激活，计算后的部分和还要被保存、传递或继续归约。数据可能来自
+PE 内部的寄存器，也可能来自片上 SRAM，甚至来自片外
+DRAM。距离越远，访问延迟和能耗通常越高。</p>
+<p>于是，硬件加速的核心问题从“能并行放下多少乘法器”变成了“怎样让数据少走路”。</p>
+<p>这也是 Luo 的论文先讨论 dataflow，再讨论 FPGA 和 CGRA
+的原因。Dataflow
+决定了计算在时间和空间中的安排方式：哪个数据留在本地，哪个数据沿阵列传播，部分和在哪里累积，以及一份数据能被多少个
+PE 复用。</p>
+<h2 id="dataflow让最昂贵的数据少走几步">Dataflow：让最昂贵的数据少走几步</h2>
+<p>卷积加速器中常见的 Weight Stationary、Output Stationary 与 Row
+Stationary，并不是三种芯片，而是三种数据驻留策略。</p>
+<p><img src="cnn-dataflow-ws-os-nlr-rs.png" srcset="/img/loading.gif" lazyload alt="卷积计算中的四种数据流：权重驻留、输出驻留、无局部复用与行驻留"></p>
+<p><em>图
+2：四种卷积数据流中的数据移动。红色表示权重，蓝色表示输入激活，绿色虚线表示部分和。WS
+与 OS 分别把权重和输出留在 PE 附近；NLR 几乎不利用 PE 内部复用；RS
+则尝试同时挖掘多类数据的局部复用。图片来自 Luo 论文 Figure
+1。<sup><a href="#ref-1">[1]</a></sup></em></p>
+<p>这张图值得关注的不是四组连线的形状，而是每种颜色跨越存储层次的次数。某类数据一旦能够在
+PE 内停留或在相邻 PE
+之间复用，就不必为每次乘加重新访问全局缓冲区；dataflow
+的价值，正是用空间上的局部通信替代代价更高的远距离搬运。</p>
+<table>
+<thead>
+<tr>
+<th>数据流</th>
+<th>主要驻留对象</th>
+<th>数据组织方式</th>
+<th>主要收益</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Weight Stationary（WS）</td>
+<td>权重</td>
+<td>权重留在 PE 附近，激活和部分和流动</td>
+<td>减少权重的重复读取</td>
+</tr>
+<tr>
+<td>Output Stationary（OS）</td>
+<td>输出部分和</td>
+<td>部分和留在本地，激活与权重不断到达</td>
+<td>减少中间结果的读写与传递</td>
+</tr>
+<tr>
+<td>Row Stationary（RS）</td>
+<td>行级相关数据</td>
+<td>在局部同时复用权重、激活与部分和</td>
+<td>综合降低多类数据移动</td>
+</tr>
+<tr>
+<td>No Local Reuse（NLR）</td>
+<td>不强调驻留</td>
+<td>数据频繁经过外部或共享存储</td>
+<td>减少 PE 内寄存器需求，但通信量较高</td>
+</tr>
+</tbody>
+</table>
+<p>这里的“Stationary”不是绝对静止，而是指一类数据在一段计算期间被保留在
+PE 或邻近存储中，多次参与运算。</p>
+<p>更重要的是，dataflow 与硬件平台并不一一对应。FPGA 可以实现
+WS、OS，也可以搭建脉动式数据通路；CGRA 可以在不同 kernel
+之间改变数据流；专用 ASIC
+同样可能支持多种驻留策略。硬件之间真正的差别，在于改变这些计算和通信关系时，需要付出多少资源、能量与编译成本。</p>
+<h2 id="fpga把电路本身变成可编辑对象">FPGA：把电路本身变成可编辑对象</h2>
+<p>FPGA 的基本资源包括查找表（LUT）、触发器、片上存储、DSP
+单元和可编程互连。配置比特决定每个逻辑块实现什么布尔功能，也决定不同资源之间怎样连接。</p>
+<p>“细粒度可编程”描述的正是这种能力。设计者可以控制数据通路的位宽、流水线深度、存储分块、地址生成和控制逻辑，甚至能针对某种模型使用非标准数值格式。一个
+8-bit
+乘加器、一个特殊激活函数或一条完全定制的流式管线，都可以直接由底层资源组合出来。</p>
+<p>灵活性也带来明显成本。为了让任意逻辑和连线都能被重新配置，FPGA
+必须保留大量配置 SRAM、多路选择器和通用路由资源。同一个字级乘加运算，在
+FPGA
+上往往需要穿过比专用电路更复杂的可编程结构。芯片面积和功耗中，有相当一部分用于“保持一切皆可改变”，而不是直接完成目标计算。</p>
+<p><img src="fpga-cgra-reconfiguration-granularity.jpg" srcset="/img/loading.gif" lazyload alt="FPGA 与 CGRA 的重构粒度对比：LUT 映射布尔逻辑，ALU 映射字级运算"></p>
+<p><em>图 3：细粒度与粗粒度重构的概念对比。左侧 FPGA
+将布尔函数分解并映射到 LUT；右侧 CGRA
+将数据流图中的字级运算映射到已经具备算术功能的 ALU。图片引自 Ansaloni
+的博士论文 Figure 1.1。<sup><a href="#ref-7">[7]</a></sup></em></p>
+<p>图中的差异可以概括为“被配置对象的粒度不同”：FPGA
+的可编辑对象接近逻辑门和位级连线，CGRA
+的可编辑对象则接近完整算子及其数据依赖。这不是说 FPGA
+只能处理布尔逻辑，也不是说所有 CGRA 都使用 32-bit
+ALU；它强调的是，两者为获得灵活性所保留的硬件层级不同。</p>
+<p>Luo 的论文选取了三个 FPGA 案例：</p>
+<ul>
+<li><strong>nn-X</strong> 采用 ARM 主处理器与 FPGA
+协处理器的组合，把固定权重缓存在片上，让激活在定制计算单元之间流动，体现了
+WS 思路。论文表格报告其吞吐量为 227 GOPS，功耗为 8 W。</li>
+<li><strong>Memory-Centric Accelerator</strong>
+把优化重点放在存储层次和复用缓冲区上，使用 tiling
+与循环变换降低外部带宽需求。论文转述的结果是，相同 FPGA 资源下性能提高
+11 倍，或在相同性能下将资源使用量降低到原来的约十三分之一。</li>
+<li><strong>Caffeine</strong> 使用 systolic-like PE
+组织卷积和全连接层，通过 input-major 与 weight-major
+映射增加数据复用。论文表格给出的吞吐量为 354 GOPS，功耗为 26 W。</li>
+</ul>
+<p>Caffeine 揭示了一条容易被混淆的边界：<strong>FPGA
+和脉动阵列不是互斥选项。</strong> FPGA
+描述的是底层硬件怎样被实现和配置，脉动阵列描述的是计算单元如何连接、数据如何传播。一块
+FPGA 完全可以被配置成脉动阵列。</p>
+<h2 id="cgra把算子与通信路径变成可编辑对象">CGRA：把算子与通信路径变成可编辑对象</h2>
+<p>CGRA 同样具有可重构性，但它不再从布尔逻辑和位级布线开始。典型 CGRA
+由一组处理单元（PE）、配置存储、可编程互连以及局部或全局存储组成。每个
+PE 通常已经能够执行加法、乘法、MAC、比较或逻辑运算。</p>
+<p><img src="cgra-array-and-processing-element.webp" srcset="/img/loading.gif" lazyload alt="4×4 CGRA 阵列及单个处理单元的内部结构"></p>
+<p><em>图 4：一个简化的 4×4 CGRA 及 PE
+内部结构。阵列周围的数据缓冲区和上下文存储分别保存操作数与配置；PE
+内的输入选择器、ALU
+和寄存器共同决定“数据从哪里来、执行什么运算、结果到哪里去”。图片引自
+Damsgaard、Ometov 与 Nurmi 的 Figure
+1。<sup><a href="#ref-8">[8]</a></sup></em></p>
+<p>如果把 FPGA 比作一套可以自由搭建墙体、电路和管线的建筑材料，CGRA
+更像一座已经放置好机器和通道的工厂。重新配置时，不必从逻辑门开始搭建乘法器，而是决定每台机器执行哪种运算，以及中间结果沿哪条通道抵达下一台机器。</p>
+<p>CGRA
+的编译器会把程序中的数据流图映射到物理阵列。这个过程至少包含四个相互制约的问题：操作放在哪个
+PE
+上，操作在哪个周期执行，中间值经过哪条路由，以及输入和结果放在哪一级存储。空间资源不足时，同一个
+PE 还可以在不同周期执行不同操作，形成时间复用。</p>
+<p><img src="cgra-dfg-to-pe-array-mapping.png" srcset="/img/loading.gif" lazyload alt="数据流图向 CGRA 处理单元阵列与多 Bank 局部存储的映射"></p>
+<p><em>图 5：从程序数据流图到 CGRA
+的空间映射。上方节点表示循环中的操作及依赖；下方把这些操作放置到 PE
+阵列，并将数据安排到多 Bank 局部存储。深色节点对应 load/store
+等访存操作，虚线表示它们与存储系统之间的关联。图片引自 Kim 等人的 CGRA
+映射研究。<sup><a href="#ref-9">[9]</a></sup></em></p>
+<p>这幅图把“可重构”从抽象概念变成了一个编译问题：数据流图的节点变成某个
+PE
+在某个周期执行的操作，边变成阵列中的传输路径，而数组元素还要被分配到不会发生同时访问冲突的存储
+Bank。图中的双缓冲让 DMA
+可以在一组数据参与计算时搬运下一组数据，从而把外部访存与阵列执行重叠起来。映射质量因此不仅取决于
+PE 是否够用，也取决于路由拥塞、存储 Bank
+冲突和数据预取能否同时得到满足。</p>
+<p>这种字级或算子级重构省去了 FPGA 大量细粒度配置开销，因此 CGRA
+通常被视为专用 ASIC 与 FPGA
+之间的折中：它试图接近专用电路的性能和能效，同时保留软件可编程性。Podobas、Sano
+与 Matsuoka 的 CGRA
+综述也把“性能与可编程性之间的平衡”视为这一架构家族的核心特征。<sup><a href="#ref-2">[2]</a></sup></p>
+<p>Luo 的论文讨论了几种不同形态的粗粒度空间加速器：</p>
+<table>
+<thead>
+<tr>
+<th>设计</th>
+<th>主要结构</th>
+<th>数据流与可重构特征</th>
+<th>原论文强调的结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NP-CGRA</td>
+<td>面向 MobileNet 的 MAC PE 与高带宽本地存储总线</td>
+<td>OS；分别适配深度卷积与逐点卷积</td>
+<td>DWC/PWC 的面积-时延积相对传统 CGRA 改善 8×/18×</td>
+</tr>
+<tr>
+<td>SDT-CGRA</td>
+<td>RC 计算矩阵与 SBU 流缓冲矩阵</td>
+<td>静态配置计算功能，动态调度数据流</td>
+<td>77.4 GOPS、1.526 W、50.78 GOPS/W</td>
+</tr>
+<tr>
+<td>MAERI</td>
+<td>可配置乘法开关、加法归约树和重构互连</td>
+<td>支持不同大小的虚拟神经元与多种 dataflow</td>
+<td>相对固定互连基线，PE 利用率提高
+8%–459%<sup><a href="#ref-3">[3]</a></sup></td>
+</tr>
+<tr>
+<td>Eyeriss v2</td>
+<td>层次化 mesh NoC 与稀疏数据处理</td>
+<td>RS+；按层适配复用量和带宽需求</td>
+<td>原工作强调紧凑、稀疏模型上的资源利用率与能效<sup><a href="#ref-4">[4]</a></sup></td>
+</tr>
+</tbody>
+</table>
+<p>不过，这张表也暴露出 CGRA 分类的弹性。MAERI 和 Eyeriss v2
+确实具备粗粒度 PE、空间映射和可配置通信，但许多文献会把它们称为 spatial
+DNN accelerator 或专用 ASIC，而不是一般意义上的
+CGRA。原论文采用了较宽的定义，把“具有粗粒度可重构特征的空间加速器”都放入
+CGRA 一侧。这个选择适合讨论架构趋势，却不是唯一的分类标准。</p>
+<h2 id="原论文的数字应该怎样读">原论文的数字应该怎样读</h2>
+<p>论文把不同设计的吞吐量、功耗、能效与面积汇总在同一张表中，并据此认为
+FPGA 整体上拥有较高吞吐量，CGRA
+则拥有更好的能效和面积表现。下面保留其中主要数据：</p>
+<table>
+<thead>
+<tr>
+<th>架构</th>
+<th>平台或工艺</th>
+<th style="text-align: right;">吞吐量</th>
+<th style="text-align: right;">功耗</th>
+<th style="text-align: right;">论文列出的能效</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>nn-X</td>
+<td>Xilinx ZC706</td>
+<td style="text-align: right;">227 GOPS</td>
+<td style="text-align: right;">8 W</td>
+<td style="text-align: right;">25 GOPS/W</td>
+</tr>
+<tr>
+<td>Memory-Centric</td>
+<td>Virtex-6 ML605</td>
+<td style="text-align: right;">17 GOPS</td>
+<td style="text-align: right;">N/A</td>
+<td style="text-align: right;">N/A</td>
+</tr>
+<tr>
+<td>Caffeine</td>
+<td>Virtex-7 690T</td>
+<td style="text-align: right;">354 GOPS</td>
+<td style="text-align: right;">26 W</td>
+<td style="text-align: right;">13.6 GOPS/W</td>
+</tr>
+<tr>
+<td>Angel-Eye</td>
+<td>Zynq XC7Z045</td>
+<td style="text-align: right;">137 GOPS</td>
+<td style="text-align: right;">9.63 W</td>
+<td style="text-align: right;">14.2 GOPS/W</td>
+</tr>
+<tr>
+<td>FP-DNN</td>
+<td>Stratix-V</td>
+<td style="text-align: right;">364.4 GOPS</td>
+<td style="text-align: right;">25 W</td>
+<td style="text-align: right;">14.57 GOPS/W</td>
+</tr>
+<tr>
+<td>NP-CGRA</td>
+<td>TSMC 28 nm</td>
+<td style="text-align: right;">64 GOPS</td>
+<td style="text-align: right;">N/A</td>
+<td style="text-align: right;">N/A</td>
+</tr>
+<tr>
+<td>SDT-CGRA</td>
+<td>SMIC 55 nm</td>
+<td style="text-align: right;">77.4 GOPS</td>
+<td style="text-align: right;">1.526 W</td>
+<td style="text-align: right;">50.78 GOPS/W</td>
+</tr>
+<tr>
+<td>MAERI</td>
+<td>TSMC 28 nm</td>
+<td style="text-align: right;">N/A</td>
+<td style="text-align: right;">0.3 W</td>
+<td style="text-align: right;">N/A</td>
+</tr>
+<tr>
+<td>Eyeriss v2</td>
+<td>TSMC 65 nm</td>
+<td style="text-align: right;">153.6 GOPS</td>
+<td style="text-align: right;">1.65 W</td>
+<td style="text-align: right;">253.2 GOPS/W</td>
+</tr>
+<tr>
+<td>DNPU</td>
+<td>65 nm CMOS</td>
+<td style="text-align: right;">1.2 TOPS</td>
+<td style="text-align: right;">0.279 W</td>
+<td style="text-align: right;">3.9 TOPS/W</td>
+</tr>
+<tr>
+<td>ISSCC19-7.4</td>
+<td>65 nm CMOS</td>
+<td style="text-align: right;">206 GOPS</td>
+<td style="text-align: right;">0.0024–0.196 W</td>
+<td style="text-align: right;">2.16 TOPS/W</td>
+</tr>
+</tbody>
+</table>
+<p>这组数字适合观察“样本中的架构倾向”，不适合形成跨平台排名。表中的 FPGA
+开发板和 28/55/65 nm ASIC
+来自不同年份，采用不同的模型、数值精度、稀疏策略、batch size
+和测量范围。即使都使用 GOPS，一次 MAC
+究竟计为一次还是两次操作，也可能没有统一。</p>
+<p>面积结论尤其需要谨慎。论文表中的五个 FPGA
+案例都没有给出平方毫米面积，CGRA
+一侧却使用实际芯片面积。由此可以说明部分 CGRA/ASIC
+实现很紧凑，却无法仅凭这张表完成 FPGA 与 CGRA 的面积对照。</p>
+<p>表内还有几处数值无法直接相互推导。Eyeriss v2 一行给出的 153.6 GOPS
+除以 1.65 W，约为 93.1 GOPS/W，与能效列的 253.2 GOPS/W 不一致；nn-X 的
+227 GOPS 除以 8 W 约为 28.4 GOPS/W，而不是 25；DNPU 的两列相除约为 4.30
+TOPS/W，与表中的 3.9 TOPS/W
+也存在差异。它们可能来自不同运行点、精度或稀疏口径，也可能是转录问题，但论文没有提供足够说明。</p>
+<p>因此，原论文的结论更适合改写成下面这句话：</p>
+<blockquote>
+<p>在所选案例中，细粒度重构展现了高度定制并行数据通路的能力；粗粒度或专用空间加速器则通过更直接的算术单元和互连设计，表现出较高能效潜力。</p>
+</blockquote>
+<p>这是一种设计空间判断，而不是一条“FPGA 必然更快、CGRA
+必然更省电”的定律。表中吞吐量达到 1.2 TOPS 的
+DNPU，本身就是对简单概括的提醒。</p>
+<h2 id="两张相似的网格语义完全不同">两张相似的网格，语义完全不同</h2>
+<p>理解完 FPGA 与
+CGRA，再回看脉动阵列，就能发现“长得像”并不等于“执行方式相同”。</p>
+<p><img src="systolic_array.png" srcset="/img/loading.gif" lazyload alt="权重驻留脉动阵列：激活横向传播，部分和纵向累加"></p>
+<p><em>图 6：一种权重驻留脉动阵列。权重预加载到
+PE，输入激活向右传播，部分和向下传播。</em></p>
+<p>图 4 中的箭头首先表示<strong>可选的数据路径</strong>：配置决定 PE
+执行何种操作，也决定数据可以从哪个邻居到达、又发往哪里。图 6
+中的箭头则表示<strong>计算协议本身</strong>：激活每拍向右移动，部分和每拍向下移动，每个
+PE 用本地权重完成一次乘加。</p>
+<p>二者的共同点来自空间计算范式。它们都把计算展开到物理空间，让中间结果直接在相邻
+PE 之间传递，从而避开中央寄存器文件或频繁的远端存储访问。差异在于，CGRA
+为改变计算图和路由保留了配置能力，脉动阵列则通过规则化传播减少控制和通信开销。</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>典型 CGRA</th>
+<th>典型脉动阵列</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>设计目标</td>
+<td>在效率与可重构性之间平衡</td>
+<td>让规则依赖计算持续、高密度地推进</td>
+</tr>
+<tr>
+<td>PE 功能</td>
+<td>多功能 ALU/MAC，可包含寄存器和谓词支持</td>
+<td>高度同构，常以 MAC 或简单算子为主</td>
+</tr>
+<tr>
+<td>互连</td>
+<td>可编程，可支持多方向、多跳、广播或归约</td>
+<td>多为固定邻接连接和规则传播方向</td>
+</tr>
+<tr>
+<td>控制</td>
+<td>配置上下文与静态时空调度，部分设计支持动态机制</td>
+<td>全局节拍下规则推进，控制隐含在数据到达时序中</td>
+</tr>
+<tr>
+<td>映射问题</td>
+<td>数据流图的放置、调度、路由与存储映射</td>
+<td>规则循环依赖到空间坐标和时间拍的投影</td>
+</tr>
+<tr>
+<td>适合负载</td>
+<td>多种 DSP/DNN kernel、需要切换映射的循环</td>
+<td>GEMM、卷积与规则 stencil 等仿射依赖计算</td>
+</tr>
+<tr>
+<td>主要代价</td>
+<td>配置存储、灵活互连和复杂编译器</td>
+<td>非规则形状、分支或动态稀疏下的低利用率</td>
+</tr>
+</tbody>
+</table>
+<p>这张对照表描述的是典型倾向，不是定义清单。CGRA 不一定采用图 4
+的双向最近邻网络，也不一定逐周期动态重构；脉动阵列不一定采用图 6
+的权重驻留，也不一定由 ASIC
+实现。把一张示意图中的属性扩大成整个架构类别的必要条件，会让比较失真。</p>
+<h2 id="脉动不是一种芯片材质而是一种执行秩序">脉动不是一种芯片材质，而是一种执行秩序</h2>
+<p>对于矩阵乘法 <span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.186ex;" xmlns="http://www.w3.org/2000/svg" width="10.916ex" height="1.805ex" role="img" focusable="false" viewBox="0 -716 4825 798"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D436" d="M50 252Q50 367 117 473T286 641T490 704Q580 704 633 653Q642 643 648 636T656 626L657 623Q660 623 684 649Q691 655 699 663T715 679T725 690L740 705H746Q760 705 760 698Q760 694 728 561Q692 422 692 421Q690 416 687 415T669 413H653Q647 419 647 422Q647 423 648 429T650 449T651 481Q651 552 619 605T510 659Q484 659 454 652T382 628T299 572T226 479Q194 422 175 346T156 222Q156 108 232 58Q280 24 350 24Q441 24 512 92T606 240Q610 253 612 255T628 257Q648 257 648 248Q648 243 647 239Q618 132 523 55T319 -22Q206 -22 128 53T50 252Z"></path></g><g data-mml-node="mo" transform="translate(1037.8,0)"><path data-c="3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path></g><g data-mml-node="mi" transform="translate(2093.6,0)"><path data-c="1D434" d="M208 74Q208 50 254 46Q272 46 272 35Q272 34 270 22Q267 8 264 4T251 0Q249 0 239 0T205 1T141 2Q70 2 50 0H42Q35 7 35 11Q37 38 48 46H62Q132 49 164 96Q170 102 345 401T523 704Q530 716 547 716H555H572Q578 707 578 706L606 383Q634 60 636 57Q641 46 701 46Q726 46 726 36Q726 34 723 22Q720 7 718 4T704 0Q701 0 690 0T651 1T578 2Q484 2 455 0H443Q437 6 437 9T439 27Q443 40 445 43L449 46H469Q523 49 533 63L521 213H283L249 155Q208 86 208 74ZM516 260Q516 271 504 416T490 562L463 519Q447 492 400 412L310 260L413 259Q516 259 516 260Z"></path></g><g data-mml-node="mo" transform="translate(3065.8,0)"><path data-c="D7" d="M630 29Q630 9 609 9Q604 9 587 25T493 118L389 222L284 117Q178 13 175 11Q171 9 168 9Q160 9 154 15T147 29Q147 36 161 51T255 146L359 250L255 354Q174 435 161 449T147 471Q147 480 153 485T168 490Q173 490 175 489Q178 487 284 383L389 278L493 382Q570 459 587 475T609 491Q630 491 630 471Q630 464 620 453T522 355L418 250L522 145Q606 61 618 48T630 29Z"></path></g><g data-mml-node="mi" transform="translate(4066,0)"><path data-c="1D435" d="M231 637Q204 637 199 638T194 649Q194 676 205 682Q206 683 335 683Q594 683 608 681Q671 671 713 636T756 544Q756 480 698 429T565 360L555 357Q619 348 660 311T702 219Q702 146 630 78T453 1Q446 0 242 0Q42 0 39 2Q35 5 35 10Q35 17 37 24Q42 43 47 45Q51 46 62 46H68Q95 46 128 49Q142 52 147 61Q150 65 219 339T288 628Q288 635 231 637ZM649 544Q649 574 634 600T585 634Q578 636 493 637Q473 637 451 637T416 636H403Q388 635 384 626Q382 622 352 506Q352 503 351 500L320 374H401Q482 374 494 376Q554 386 601 434T649 544ZM595 229Q595 273 572 302T512 336Q506 337 429 337Q311 337 310 336Q310 334 293 263T258 122L240 52Q240 48 252 48T333 46Q422 46 429 47Q491 54 543 105T595 229Z"></path></g></g></g></svg></mjx-container></span>，每个输出元素为：</p>
+<p><span class="math display"><mjx-container class="MathJax" jax="SVG" display="true"><svg style="vertical-align: -2.75ex;" xmlns="http://www.w3.org/2000/svg" width="16.345ex" height="4.899ex" role="img" focusable="false" viewBox="0 -950 7224.6 2165.5"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mi"><path data-c="1D436" d="M50 252Q50 367 117 473T286 641T490 704Q580 704 633 653Q642 643 648 636T656 626L657 623Q660 623 684 649Q691 655 699 663T715 679T725 690L740 705H746Q760 705 760 698Q760 694 728 561Q692 422 692 421Q690 416 687 415T669 413H653Q647 419 647 422Q647 423 648 429T650 449T651 481Q651 552 619 605T510 659Q484 659 454 652T382 628T299 572T226 479Q194 422 175 346T156 222Q156 108 232 58Q280 24 350 24Q441 24 512 92T606 240Q610 253 612 255T628 257Q648 257 648 248Q648 243 647 239Q618 132 523 55T319 -22Q206 -22 128 53T50 252Z"></path></g><g data-mml-node="TeXAtom" transform="translate(748,-150) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="1D456" d="M184 600Q184 624 203 642T247 661Q265 661 277 649T290 619Q290 596 270 577T226 557Q211 557 198 567T184 600ZM21 287Q21 295 30 318T54 369T98 420T158 442Q197 442 223 419T250 357Q250 340 236 301T196 196T154 83Q149 61 149 51Q149 26 166 26Q175 26 185 29T208 43T235 78T260 137Q263 149 265 151T282 153Q302 153 302 143Q302 135 293 112T268 61T223 11T161 -11Q129 -11 102 10T74 74Q74 91 79 106T122 220Q160 321 166 341T173 380Q173 404 156 404H154Q124 404 99 371T61 287Q60 286 59 284T58 281T56 279T53 278T49 278T41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mi" transform="translate(345,0)"><path data-c="1D457" d="M297 596Q297 627 318 644T361 661Q378 661 389 651T403 623Q403 595 384 576T340 557Q322 557 310 567T297 596ZM288 376Q288 405 262 405Q240 405 220 393T185 362T161 325T144 293L137 279Q135 278 121 278H107Q101 284 101 286T105 299Q126 348 164 391T252 441Q253 441 260 441T272 442Q296 441 316 432Q341 418 354 401T367 348V332L318 133Q267 -67 264 -75Q246 -125 194 -164T75 -204Q25 -204 7 -183T-12 -137Q-12 -110 7 -91T53 -71Q70 -71 82 -81T95 -112Q95 -148 63 -167Q69 -168 77 -168Q111 -168 139 -140T182 -74L193 -32Q204 11 219 72T251 197T278 308T289 365Q289 372 288 376Z"></path></g></g></g><g data-mml-node="mo" transform="translate(1611.1,0)"><path data-c="3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path></g><g data-mml-node="munder" transform="translate(2666.8,0)"><g data-mml-node="mo"><path data-c="2211" d="M60 948Q63 950 665 950H1267L1325 815Q1384 677 1388 669H1348L1341 683Q1320 724 1285 761Q1235 809 1174 838T1033 881T882 898T699 902H574H543H251L259 891Q722 258 724 252Q725 250 724 246Q721 243 460 -56L196 -356Q196 -357 407 -357Q459 -357 548 -357T676 -358Q812 -358 896 -353T1063 -332T1204 -283T1307 -196Q1328 -170 1348 -124H1388Q1388 -125 1381 -145T1356 -210T1325 -294L1267 -449L666 -450Q64 -450 61 -448Q55 -446 55 -439Q55 -437 57 -433L590 177Q590 178 557 222T452 366T322 544L56 909L55 924Q55 945 60 948Z"></path></g><g data-mml-node="mi" transform="translate(537.8,-1107.7) scale(0.707)"><path data-c="1D458" d="M121 647Q121 657 125 670T137 683Q138 683 209 688T282 694Q294 694 294 686Q294 679 244 477Q194 279 194 272Q213 282 223 291Q247 309 292 354T362 415Q402 442 438 442Q468 442 485 423T503 369Q503 344 496 327T477 302T456 291T438 288Q418 288 406 299T394 328Q394 353 410 369T442 390L458 393Q446 405 434 405H430Q398 402 367 380T294 316T228 255Q230 254 243 252T267 246T293 238T320 224T342 206T359 180T365 147Q365 130 360 106T354 66Q354 26 381 26Q429 26 459 145Q461 153 479 153H483Q499 153 499 144Q499 139 496 130Q455 -11 378 -11Q333 -11 305 15T277 90Q277 108 280 121T283 145Q283 167 269 183T234 206T200 217T182 220H180Q168 178 159 139T145 81T136 44T129 20T122 7T111 -2Q98 -11 83 -11Q66 -11 57 -1T48 16Q48 26 85 176T158 471L195 616Q196 629 188 632T149 637H144Q134 637 131 637T124 640T121 647Z"></path></g></g><g data-mml-node="msub" transform="translate(4277.5,0)"><g data-mml-node="mi"><path data-c="1D434" d="M208 74Q208 50 254 46Q272 46 272 35Q272 34 270 22Q267 8 264 4T251 0Q249 0 239 0T205 1T141 2Q70 2 50 0H42Q35 7 35 11Q37 38 48 46H62Q132 49 164 96Q170 102 345 401T523 704Q530 716 547 716H555H572Q578 707 578 706L606 383Q634 60 636 57Q641 46 701 46Q726 46 726 36Q726 34 723 22Q720 7 718 4T704 0Q701 0 690 0T651 1T578 2Q484 2 455 0H443Q437 6 437 9T439 27Q443 40 445 43L449 46H469Q523 49 533 63L521 213H283L249 155Q208 86 208 74ZM516 260Q516 271 504 416T490 562L463 519Q447 492 400 412L310 260L413 259Q516 259 516 260Z"></path></g><g data-mml-node="TeXAtom" transform="translate(783,-150) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="1D456" d="M184 600Q184 624 203 642T247 661Q265 661 277 649T290 619Q290 596 270 577T226 557Q211 557 198 567T184 600ZM21 287Q21 295 30 318T54 369T98 420T158 442Q197 442 223 419T250 357Q250 340 236 301T196 196T154 83Q149 61 149 51Q149 26 166 26Q175 26 185 29T208 43T235 78T260 137Q263 149 265 151T282 153Q302 153 302 143Q302 135 293 112T268 61T223 11T161 -11Q129 -11 102 10T74 74Q74 91 79 106T122 220Q160 321 166 341T173 380Q173 404 156 404H154Q124 404 99 371T61 287Q60 286 59 284T58 281T56 279T53 278T49 278T41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mi" transform="translate(345,0)"><path data-c="1D458" d="M121 647Q121 657 125 670T137 683Q138 683 209 688T282 694Q294 694 294 686Q294 679 244 477Q194 279 194 272Q213 282 223 291Q247 309 292 354T362 415Q402 442 438 442Q468 442 485 423T503 369Q503 344 496 327T477 302T456 291T438 288Q418 288 406 299T394 328Q394 353 410 369T442 390L458 393Q446 405 434 405H430Q398 402 367 380T294 316T228 255Q230 254 243 252T267 246T293 238T320 224T342 206T359 180T365 147Q365 130 360 106T354 66Q354 26 381 26Q429 26 459 145Q461 153 479 153H483Q499 153 499 144Q499 139 496 130Q455 -11 378 -11Q333 -11 305 15T277 90Q277 108 280 121T283 145Q283 167 269 183T234 206T200 217T182 220H180Q168 178 159 139T145 81T136 44T129 20T122 7T111 -2Q98 -11 83 -11Q66 -11 57 -1T48 16Q48 26 85 176T158 471L195 616Q196 629 188 632T149 637H144Q134 637 131 637T124 640T121 647Z"></path></g></g></g><g data-mml-node="msub" transform="translate(5722.9,0)"><g data-mml-node="mi"><path data-c="1D435" d="M231 637Q204 637 199 638T194 649Q194 676 205 682Q206 683 335 683Q594 683 608 681Q671 671 713 636T756 544Q756 480 698 429T565 360L555 357Q619 348 660 311T702 219Q702 146 630 78T453 1Q446 0 242 0Q42 0 39 2Q35 5 35 10Q35 17 37 24Q42 43 47 45Q51 46 62 46H68Q95 46 128 49Q142 52 147 61Q150 65 219 339T288 628Q288 635 231 637ZM649 544Q649 574 634 600T585 634Q578 636 493 637Q473 637 451 637T416 636H403Q388 635 384 626Q382 622 352 506Q352 503 351 500L320 374H401Q482 374 494 376Q554 386 601 434T649 544ZM595 229Q595 273 572 302T512 336Q506 337 429 337Q311 337 310 336Q310 334 293 263T258 122L240 52Q240 48 252 48T333 46Q422 46 429 47Q491 54 543 105T595 229Z"></path></g><g data-mml-node="TeXAtom" transform="translate(792,-150) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="1D458" d="M121 647Q121 657 125 670T137 683Q138 683 209 688T282 694Q294 694 294 686Q294 679 244 477Q194 279 194 272Q213 282 223 291Q247 309 292 354T362 415Q402 442 438 442Q468 442 485 423T503 369Q503 344 496 327T477 302T456 291T438 288Q418 288 406 299T394 328Q394 353 410 369T442 390L458 393Q446 405 434 405H430Q398 402 367 380T294 316T228 255Q230 254 243 252T267 246T293 238T320 224T342 206T359 180T365 147Q365 130 360 106T354 66Q354 26 381 26Q429 26 459 145Q461 153 479 153H483Q499 153 499 144Q499 139 496 130Q455 -11 378 -11Q333 -11 305 15T277 90Q277 108 280 121T283 145Q283 167 269 183T234 206T200 217T182 220H180Q168 178 159 139T145 81T136 44T129 20T122 7T111 -2Q98 -11 83 -11Q66 -11 57 -1T48 16Q48 26 85 176T158 471L195 616Q196 629 188 632T149 637H144Q134 637 131 637T124 640T121 647Z"></path></g><g data-mml-node="mi" transform="translate(521,0)"><path data-c="1D457" d="M297 596Q297 627 318 644T361 661Q378 661 389 651T403 623Q403 595 384 576T340 557Q322 557 310 567T297 596ZM288 376Q288 405 262 405Q240 405 220 393T185 362T161 325T144 293L137 279Q135 278 121 278H107Q101 284 101 286T105 299Q126 348 164 391T252 441Q253 441 260 441T272 442Q296 441 316 432Q341 418 354 401T367 348V332L318 133Q267 -67 264 -75Q246 -125 194 -164T75 -204Q25 -204 7 -183T-12 -137Q-12 -110 7 -91T53 -71Q70 -71 82 -81T95 -112Q95 -148 63 -167Q69 -168 77 -168Q111 -168 139 -140T182 -74L193 -32Q204 11 219 72T251 197T278 308T289 365Q289 372 288 376Z"></path></g></g></g></g></g></svg></mjx-container></span></p>
+<p>在一种经典二维脉动映射中，<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: 0;" xmlns="http://www.w3.org/2000/svg" width="1.697ex" height="1.62ex" role="img" focusable="false" viewBox="0 -716 750 716"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D434" d="M208 74Q208 50 254 46Q272 46 272 35Q272 34 270 22Q267 8 264 4T251 0Q249 0 239 0T205 1T141 2Q70 2 50 0H42Q35 7 35 11Q37 38 48 46H62Q132 49 164 96Q170 102 345 401T523 704Q530 716 547 716H555H572Q578 707 578 706L606 383Q634 60 636 57Q641 46 701 46Q726 46 726 36Q726 34 723 22Q720 7 718 4T704 0Q701 0 690 0T651 1T578 2Q484 2 455 0H443Q437 6 437 9T439 27Q443 40 445 43L449 46H469Q523 49 533 63L521 213H283L249 155Q208 86 208 74ZM516 260Q516 271 504 416T490 562L463 519Q447 492 400 412L310 260L413 259Q516 259 516 260Z"></path></g></g></g></svg></mjx-container></span>
+的元素沿行传播，<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: 0;" xmlns="http://www.w3.org/2000/svg" width="1.717ex" height="1.545ex" role="img" focusable="false" viewBox="0 -683 759 683"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D435" d="M231 637Q204 637 199 638T194 649Q194 676 205 682Q206 683 335 683Q594 683 608 681Q671 671 713 636T756 544Q756 480 698 429T565 360L555 357Q619 348 660 311T702 219Q702 146 630 78T453 1Q446 0 242 0Q42 0 39 2Q35 5 35 10Q35 17 37 24Q42 43 47 45Q51 46 62 46H68Q95 46 128 49Q142 52 147 61Q150 65 219 339T288 628Q288 635 231 637ZM649 544Q649 574 634 600T585 634Q578 636 493 637Q473 637 451 637T416 636H403Q388 635 384 626Q382 622 352 506Q352 503 351 500L320 374H401Q482 374 494 376Q554 386 601 434T649 544ZM595 229Q595 273 572 302T512 336Q506 337 429 337Q311 337 310 336Q310 334 293 263T258 122L240 52Q240 48 252 48T333 46Q422 46 429 47Q491 54 543 105T595 229Z"></path></g></g></g></svg></mjx-container></span>
+的元素沿列传播。输入经过适当的时间错位后，<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.357ex;" xmlns="http://www.w3.org/2000/svg" width="3.27ex" height="1.977ex" role="img" focusable="false" viewBox="0 -716 1445.4 873.8"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mi"><path data-c="1D434" d="M208 74Q208 50 254 46Q272 46 272 35Q272 34 270 22Q267 8 264 4T251 0Q249 0 239 0T205 1T141 2Q70 2 50 0H42Q35 7 35 11Q37 38 48 46H62Q132 49 164 96Q170 102 345 401T523 704Q530 716 547 716H555H572Q578 707 578 706L606 383Q634 60 636 57Q641 46 701 46Q726 46 726 36Q726 34 723 22Q720 7 718 4T704 0Q701 0 690 0T651 1T578 2Q484 2 455 0H443Q437 6 437 9T439 27Q443 40 445 43L449 46H469Q523 49 533 63L521 213H283L249 155Q208 86 208 74ZM516 260Q516 271 504 416T490 562L463 519Q447 492 400 412L310 260L413 259Q516 259 516 260Z"></path></g><g data-mml-node="TeXAtom" transform="translate(783,-150) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="1D456" d="M184 600Q184 624 203 642T247 661Q265 661 277 649T290 619Q290 596 270 577T226 557Q211 557 198 567T184 600ZM21 287Q21 295 30 318T54 369T98 420T158 442Q197 442 223 419T250 357Q250 340 236 301T196 196T154 83Q149 61 149 51Q149 26 166 26Q175 26 185 29T208 43T235 78T260 137Q263 149 265 151T282 153Q302 153 302 143Q302 135 293 112T268 61T223 11T161 -11Q129 -11 102 10T74 74Q74 91 79 106T122 220Q160 321 166 341T173 380Q173 404 156 404H154Q124 404 99 371T61 287Q60 286 59 284T58 281T56 279T53 278T49 278T41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mi" transform="translate(345,0)"><path data-c="1D458" d="M121 647Q121 657 125 670T137 683Q138 683 209 688T282 694Q294 694 294 686Q294 679 244 477Q194 279 194 272Q213 282 223 291Q247 309 292 354T362 415Q402 442 438 442Q468 442 485 423T503 369Q503 344 496 327T477 302T456 291T438 288Q418 288 406 299T394 328Q394 353 410 369T442 390L458 393Q446 405 434 405H430Q398 402 367 380T294 316T228 255Q230 254 243 252T267 246T293 238T320 224T342 206T359 180T365 147Q365 130 360 106T354 66Q354 26 381 26Q429 26 459 145Q461 153 479 153H483Q499 153 499 144Q499 139 496 130Q455 -11 378 -11Q333 -11 305 15T277 90Q277 108 280 121T283 145Q283 167 269 183T234 206T200 217T182 220H180Q168 178 159 139T145 81T136 44T129 20T122 7T111 -2Q98 -11 83 -11Q66 -11 57 -1T48 16Q48 26 85 176T158 471L195 616Q196 629 188 632T149 637H144Q134 637 131 637T124 640T121 647Z"></path></g></g></g></g></g></svg></mjx-container></span> 和 <span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.666ex;" xmlns="http://www.w3.org/2000/svg" width="3.398ex" height="2.211ex" role="img" focusable="false" viewBox="0 -683 1501.7 977.2"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mi"><path data-c="1D435" d="M231 637Q204 637 199 638T194 649Q194 676 205 682Q206 683 335 683Q594 683 608 681Q671 671 713 636T756 544Q756 480 698 429T565 360L555 357Q619 348 660 311T702 219Q702 146 630 78T453 1Q446 0 242 0Q42 0 39 2Q35 5 35 10Q35 17 37 24Q42 43 47 45Q51 46 62 46H68Q95 46 128 49Q142 52 147 61Q150 65 219 339T288 628Q288 635 231 637ZM649 544Q649 574 634 600T585 634Q578 636 493 637Q473 637 451 637T416 636H403Q388 635 384 626Q382 622 352 506Q352 503 351 500L320 374H401Q482 374 494 376Q554 386 601 434T649 544ZM595 229Q595 273 572 302T512 336Q506 337 429 337Q311 337 310 336Q310 334 293 263T258 122L240 52Q240 48 252 48T333 46Q422 46 429 47Q491 54 543 105T595 229Z"></path></g><g data-mml-node="TeXAtom" transform="translate(792,-150) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="1D458" d="M121 647Q121 657 125 670T137 683Q138 683 209 688T282 694Q294 694 294 686Q294 679 244 477Q194 279 194 272Q213 282 223 291Q247 309 292 354T362 415Q402 442 438 442Q468 442 485 423T503 369Q503 344 496 327T477 302T456 291T438 288Q418 288 406 299T394 328Q394 353 410 369T442 390L458 393Q446 405 434 405H430Q398 402 367 380T294 316T228 255Q230 254 243 252T267 246T293 238T320 224T342 206T359 180T365 147Q365 130 360 106T354 66Q354 26 381 26Q429 26 459 145Q461 153 479 153H483Q499 153 499 144Q499 139 496 130Q455 -11 378 -11Q333 -11 305 15T277 90Q277 108 280 121T283 145Q283 167 269 183T234 206T200 217T182 220H180Q168 178 159 139T145 81T136 44T129 20T122 7T111 -2Q98 -11 83 -11Q66 -11 57 -1T48 16Q48 26 85 176T158 471L195 616Q196 629 188 632T149 637H144Q134 637 131 637T124 640T121 647Z"></path></g><g data-mml-node="mi" transform="translate(521,0)"><path data-c="1D457" d="M297 596Q297 627 318 644T361 661Q378 661 389 651T403 623Q403 595 384 576T340 557Q322 557 310 567T297 596ZM288 376Q288 405 262 405Q240 405 220 393T185 362T161 325T144 293L137 279Q135 278 121 278H107Q101 284 101 286T105 299Q126 348 164 391T252 441Q253 441 260 441T272 442Q296 441 316 432Q341 418 354 401T367 348V332L318 133Q267 -67 264 -75Q246 -125 194 -164T75 -204Q25 -204 7 -183T-12 -137Q-12 -110 7 -91T53 -71Q70 -71 82 -81T95 -112Q95 -148 63 -167Q69 -168 77 -168Q111 -168 139 -140T182 -74L193 -32Q204 11 219 72T251 197T278 308T289 365Q289 372 288 376Z"></path></g></g></g></g></g></svg></mjx-container></span> 会在第 <span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.025ex;" xmlns="http://www.w3.org/2000/svg" width="1.179ex" height="1.595ex" role="img" focusable="false" viewBox="0 -694 521 705"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D458" d="M121 647Q121 657 125 670T137 683Q138 683 209 688T282 694Q294 694 294 686Q294 679 244 477Q194 279 194 272Q213 282 223 291Q247 309 292 354T362 415Q402 442 438 442Q468 442 485 423T503 369Q503 344 496 327T477 302T456 291T438 288Q418 288 406 299T394 328Q394 353 410 369T442 390L458 393Q446 405 434 405H430Q398 402 367 380T294 316T228 255Q230 254 243 252T267 246T293 238T320 224T342 206T359 180T365 147Q365 130 360 106T354 66Q354 26 381 26Q429 26 459 145Q461 153 479 153H483Q499 153 499 144Q499 139 496 130Q455 -11 378 -11Q333 -11 305 15T277 90Q277 108 280 121T283 145Q283 167 269 183T234 206T200 217T182 220H180Q168 178 159 139T145 81T136 44T129 20T122 7T111 -2Q98 -11 83 -11Q66 -11 57 -1T48 16Q48 26 85 176T158 471L195 616Q196 629 188 632T149 637H144Q134 637 131 637T124 640T121 647Z"></path></g></g></g></svg></mjx-container></span> 个相关节拍同时抵达 PE<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.566ex;" xmlns="http://www.w3.org/2000/svg" width="4.479ex" height="2.262ex" role="img" focusable="false" viewBox="0 -750 1979.7 1000"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mo"><path data-c="28" d="M94 250Q94 319 104 381T127 488T164 576T202 643T244 695T277 729T302 750H315H319Q333 750 333 741Q333 738 316 720T275 667T226 581T184 443T167 250T184 58T225 -81T274 -167T316 -220T333 -241Q333 -250 318 -250H315H302L274 -226Q180 -141 137 -14T94 250Z"></path></g><g data-mml-node="mi" transform="translate(389,0)"><path data-c="1D456" d="M184 600Q184 624 203 642T247 661Q265 661 277 649T290 619Q290 596 270 577T226 557Q211 557 198 567T184 600ZM21 287Q21 295 30 318T54 369T98 420T158 442Q197 442 223 419T250 357Q250 340 236 301T196 196T154 83Q149 61 149 51Q149 26 166 26Q175 26 185 29T208 43T235 78T260 137Q263 149 265 151T282 153Q302 153 302 143Q302 135 293 112T268 61T223 11T161 -11Q129 -11 102 10T74 74Q74 91 79 106T122 220Q160 321 166 341T173 380Q173 404 156 404H154Q124 404 99 371T61 287Q60 286 59 284T58 281T56 279T53 278T49 278T41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mo" transform="translate(734,0)"><path data-c="2C" d="M78 35T78 60T94 103T137 121Q165 121 187 96T210 8Q210 -27 201 -60T180 -117T154 -158T130 -185T117 -194Q113 -194 104 -185T95 -172Q95 -168 106 -156T131 -126T157 -76T173 -3V9L172 8Q170 7 167 6T161 3T152 1T140 0Q113 0 96 17Z"></path></g><g data-mml-node="mi" transform="translate(1178.7,0)"><path data-c="1D457" d="M297 596Q297 627 318 644T361 661Q378 661 389 651T403 623Q403 595 384 576T340 557Q322 557 310 567T297 596ZM288 376Q288 405 262 405Q240 405 220 393T185 362T161 325T144 293L137 279Q135 278 121 278H107Q101 284 101 286T105 299Q126 348 164 391T252 441Q253 441 260 441T272 442Q296 441 316 432Q341 418 354 401T367 348V332L318 133Q267 -67 264 -75Q246 -125 194 -164T75 -204Q25 -204 7 -183T-12 -137Q-12 -110 7 -91T53 -71Q70 -71 82 -81T95 -112Q95 -148 63 -167Q69 -168 77 -168Q111 -168 139 -140T182 -74L193 -32Q204 11 219 72T251 197T278 308T289 365Q289 372 288 376Z"></path></g><g data-mml-node="mo" transform="translate(1590.7,0)"><path data-c="29" d="M60 749L64 750Q69 750 74 750H86L114 726Q208 641 251 514T294 250Q294 182 284 119T261 12T224 -76T186 -143T145 -194T113 -227T90 -246Q87 -249 86 -250H74Q66 -250 63 -250T58 -247T55 -238Q56 -237 66 -225Q221 -64 221 250T66 725Q56 737 55 738Q55 746 60 749Z"></path></g></g></g></svg></mjx-container></span>，完成一次乘加，然后继续向邻居移动。</p>
+<p>阵列填满后，每个周期都可能有大量 PE
+同时进行有效计算。没有复杂的全局寻址，也不需要每个 PE
+独立获取和解码指令。这种规则性使脉动阵列特别适合密集矩阵乘法。Google
+第一代数据中心 TPU 的核心矩阵乘单元包含 65,536 个 8-bit
+MAC，正是专用矩阵计算组织的代表。<sup><a href="#ref-5">[5]</a></sup></p>
+<p>规则性也会形成边界。阵列启动和排空需要额外周期，矩阵尺寸无法整除阵列维度时需要
+padding，小矩阵或极端长宽比会留下空闲
+PE。面对动态稀疏、条件分支和不规则访存时，峰值 TOPS
+更难转化为实际吞吐。</p>
+<p>这说明脉动阵列不是 CGRA 的严格子类，也不能被简单理解成“功能更少的
+CGRA”。更准确的关系是：</p>
+<ul>
+<li>CGRA 是一种以粗粒度 PE 和可重构映射为核心的架构类别；</li>
+<li>脉动阵列是一种规则的时空执行与通信组织；</li>
+<li>CGRA 可以配置出脉动式数据流，但它的配置空间远大于这一种模式；</li>
+<li>FPGA 或 ASIC 也可以成为脉动阵列的实现载体。</li>
+</ul>
+<p>换句话说，<strong>CGRA
+描述“机器允许改变什么”，脉动阵列描述“计算按什么秩序发生”。</strong></p>
+<h2 id="从刚性阵列到可重构数据流">从刚性阵列到可重构数据流</h2>
+<p>真实工作负载很少永远保持同一种形状。即使一个神经网络主要由卷积和矩阵乘组成，不同层的通道数、特征图大小、复用机会和稀疏率也可能相差很大。固定
+dataflow 在某些层上高效，在另一些层上却会因带宽不足或 PE
+空闲而失去优势。</p>
+<p>这推动了专用阵列和 CGRA 在设计上的靠近。</p>
+<p>MAERI
+通过可配置的分发与归约网络，让同一组乘法器支持不同大小的虚拟神经元和多种数据流。Eyeriss
+v2 的层次化 mesh
+则根据层形状调整带宽和数据复用，并直接处理压缩的稀疏权重与激活。它们未必符合所有人对
+CGRA
+的严格定义，却共享同一个方向：保留空间计算的局部通信优势，同时降低固定数据流面对多样化模型时的利用率损失。<sup><a href="#ref-3">[3]</a></sup><sup><a href="#ref-4">[4]</a></sup></p>
+<p>编译器也在利用两类架构的交集。HiMap 在应用循环与物理 CGRA
+之间引入“虚拟脉动阵列”作为中间抽象，先提取规则的迭代依赖，再把少量重复模式映射到
+CGRA
+子区域。论文报告称，这种层次化方法能在大型阵列上显著降低编译时间，并改善映射性能与能效。<sup><a href="#ref-6">[6]</a></sup></p>
+<p>这个例子很有代表性：脉动结构不仅是一种硬件实现，也可以成为理解和编译规则计算的数学工具。CGRA
+则提供了更宽的物理底座，使同一套硬件有机会在规则计算与其他数据流之间切换。</p>
+<h2 id="规则性灵活性与效率之间没有免费午餐">规则性、灵活性与效率之间没有免费午餐</h2>
+<p>把 FPGA、CGRA
+与脉动阵列放在同一张设计图上，可以看到一条连续光谱。</p>
+<p><img src="architecture-design-space-efficiency-flexibility-performance.jpg" srcset="/img/loading.gif" lazyload alt="ASIC、CGRA、FPGA、GPU、DSP 与 CPU 在能效、灵活性和性能维度上的概念位置"></p>
+<p><em>图
+7：不同计算架构在能效、可编程灵活性与性能维度上的定性位置。本文讨论的专用脉动阵列通常以
+ASIC 实现，因此可以落在图中的 ASIC 区域；CGRA 与 FPGA
+则分别代表粗粒度和细粒度可重构计算。椭圆的位置和范围仅表达典型趋势，不是统一工作负载、工艺和精度下的基准测试结果。图片为知乎转载版本，原始制图来源与数据口径未能确认。</em></p>
+<p>这张示意图提供了一个直观的设计空间视角：通用处理器依靠软件和指令集获得较高灵活性，专用
+ASIC 则通过固定更多结构追求性能与能效；FPGA 和 CGRA 位于两者之间，而
+CGRA 通常希望用字级算术单元换取比 FPGA 更低的配置和互连开销。相关 CGRA
+综述也将“接近硬件的性能与能效，同时保留软件可编程性”概括为这类架构的核心目标。<sup><a href="#ref-10">[10]</a></sup></p>
+<p>FPGA
+把位级逻辑和布线都开放给设计者，能表达最特殊的数据路径，却为这种自由承担最高的配置与路由成本。CGRA
+预先定义字级算术单元，只开放操作、连接和时序映射，在效率与通用性之间取中间位置。专用脉动阵列进一步固定
+PE
+和数据传播规则，用更窄的适用范围换取更高计算密度、更简单的控制和更可预测的执行。</p>
+<blockquote>
+<p><strong>更高灵活性</strong>　←　FPGA（位级逻辑与布线可编程）　→　CGRA（算子与互连可重构）　→　专用脉动阵列（规则
+PE 与数据传播）　→　<strong>更高专用效率与可预测性</strong></p>
+</blockquote>
+<p>这条光谱不是硬件排行榜。算法是否规则、张量形状是否稳定、是否需要特殊位宽、外部带宽是否充足、编译器能否找到高质量映射，都会改变最终答案。更现实的系统通常也不是三选一，而是让脉动或向量单元承担密集线性代数，让标量核处理控制与非线性操作，再用可配置互连、局部存储和
+DMA 把不同计算区域组织起来。</p>
+<p>因此，评价一台 AI 加速器不能只看阵列，也不能只看峰值
+TOPS。计算、存储、互连、数值格式、编译器和实际模型共同决定了芯片最终能兑现多少理论性能。</p>
+<h2 id="结语真正的分界在于固定什么">结语：真正的分界在于“固定什么”</h2>
+<p>Luo 的论文提供了一个有用的入口：FPGA
+的细粒度可编程性扩大了定制空间，CGRA 的粗粒度 PE
+和互连减少了实现算术与通信的冗余。在论文收集的案例中，前者表现出较高吞吐潜力，后者表现出较好的能效倾向。</p>
+<p>它的定量比较仍有明显限制。不同工艺、精度、模型和测量口径不能组成严格的横向基准，宽口径的
+CGRA
+分类也会影响结论。但这些问题并不会削弱文章最有价值的启示：硬件加速器的差异，最终来自设计者选择把哪些结构固定下来，又把哪些自由度留给配置和软件。</p>
+<p>CGRA
+与脉动阵列之所以相似，是因为它们都属于空间计算；它们之所以不同，是因为前者保留重新安排计算和路径的能力，后者依靠严格的传播秩序消除控制开销。</p>
+<p>网格只是表象。真正定义一台机器的，是数据在网格中遵循的规则。</p>
+<h2 id="参考资料">参考资料</h2>
+<p><span id="ref-1"></span><strong>[1]</strong> J. Luo, “A comparative
+study of FPGA and CGRA technologies in hardware acceleration for deep
+learning,” <em>Applied and Computational Engineering</em>, vol. 51, pp.
+168–180, 2024. <a target="_blank" rel="noopener" href="https://doi.org/10.54254/2755-2721/51/20241212">DOI:
+10.54254/2755-2721/51/20241212</a></p>
+<p><span id="ref-2"></span><strong>[2]</strong> A. Podobas, K. Sano, and
+S. Matsuoka, “A Survey on Coarse-Grained Reconfigurable Architectures
+From a Performance Perspective,” <em>IEEE Access</em>, 2020. <a target="_blank" rel="noopener" href="https://doi.org/10.1109/ACCESS.2020.3012084">DOI:
+10.1109/ACCESS.2020.3012084</a>, <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2004.04509">arXiv:2004.04509</a></p>
+<p><span id="ref-3"></span><strong>[3]</strong> H. Kwon, A. Samajdar,
+and T. Krishna, “MAERI: Enabling Flexible Dataflow Mapping over DNN
+Accelerators via Reconfigurable Interconnects,” <em>ASPLOS</em>, 2018.
+<a target="_blank" rel="noopener" href="https://doi.org/10.1145/3173162.3173176">DOI:
+10.1145/3173162.3173176</a></p>
+<p><span id="ref-4"></span><strong>[4]</strong> Y.-H. Chen, T.-J. Yang,
+J. Emer, and V. Sze, “Eyeriss v2: A Flexible Accelerator for Emerging
+Deep Neural Networks on Mobile Devices,” <em>IEEE JETCAS</em>, 2019. <a target="_blank" rel="noopener" href="https://eyeriss.mit.edu/">Eyeriss 项目页</a>, <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1807.07928">arXiv:1807.07928</a></p>
+<p><span id="ref-5"></span><strong>[5]</strong> N. P. Jouppi et al.,
+“In-Datacenter Performance Analysis of a Tensor Processing Unit,”
+<em>ISCA</em>, 2017. <a target="_blank" rel="noopener" href="https://research.google/pubs/in-datacenter-performance-analysis-of-a-tensor-processing-unit/">Google
+Research</a></p>
+<p><span id="ref-6"></span><strong>[6]</strong> D. Wijerathne, Z. Li, A.
+Pathania, T. Mitra, and L. Thiele, “HiMap: Fast and Scalable
+High-Quality Mapping on CGRA via Hierarchical Abstraction,” <em>IEEE
+TCAD</em>, 2021. <a target="_blank" rel="noopener" href="https://staff.fnwi.uva.nl/a.pathania/publication/tcad-21a/">论文信息与作者页面</a></p>
+<p><span id="ref-7"></span><strong>[7]</strong> G. Ansaloni,
+<em>Architectural Exploration and Scheduling Methods for Coarse Grained
+Reconfigurable Arrays</em>, doctoral thesis, Università della Svizzera
+italiana, 2011. <a target="_blank" rel="noopener" href="https://sonar.ch/global/documents/318222">机构知识库记录</a></p>
+<p><span id="ref-8"></span><strong>[8]</strong> H. J. Damsgaard, A.
+Ometov, and J. Nurmi, “Generating CGRA Processing Element Hardware with
+CGRAgen,” <em>26th Euromicro Conference on Digital System Design</em>,
+2023. <a target="_blank" rel="noopener" href="https://doi.org/10.1109/DSD60849.2023.00011">DOI:
+10.1109/DSD60849.2023.00011</a>, <a target="_blank" rel="noopener" href="https://trepo.tuni.fi/handle/10024/208833">机构知识库记录</a></p>
+<p><span id="ref-9"></span><strong>[9]</strong> Y. Kim, J. Lee, A.
+Shrivastava, and Y. Paek, “Operation and Data Mapping for CGRAs with
+Multi-bank Memory,” <em>ACM SIGPLAN Notices</em>, vol. 45, no. 4, pp.
+17–25, 2010. <a target="_blank" rel="noopener" href="https://doi.org/10.1145/1755951.1755892">DOI:
+10.1145/1755951.1755892</a></p>
+<p><span id="ref-10"></span><strong>[10]</strong> L. Liu, J. Zhu, Z. Li,
+Y. Lu, Y. Deng, J. Han, S. Yin, and S. Wei, “A Survey of Coarse-Grained
+Reconfigurable Architecture and Design: Taxonomy, Challenges, and
+Applications,” <em>ACM Computing Surveys</em>, vol. 52, no. 6, Article
+118, 2019. <a target="_blank" rel="noopener" href="https://doi.org/10.1145/3357375">DOI:
+10.1145/3357375</a></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/AI/" class="category-chain-item">AI</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/FPGA/" class="print-no-link">#FPGA</a>
+      
+        <a href="/tags/CGRA/" class="print-no-link">#CGRA</a>
+      
+        <a href="/tags/Systolic-Array/" class="print-no-link">#Systolic Array</a>
+      
+        <a href="/tags/AI-Accelerator/" class="print-no-link">#AI Accelerator</a>
+      
+        <a href="/tags/Computer-Architecture/" class="print-no-link">#Computer Architecture</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>从计算粒度与数据流，看 FPGA、CGRA 与脉动阵列</div>
+      <div>https://samsz04.github.io/2026/07/14/fpga-cgra-systolic-array-report/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Samsz</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年7月14日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/11/11/Transformer3/" title="Transformer位置编码(3)——从RoPE到YaRN外推">
+                        <span class="hidden-mobile">Transformer位置编码(3)——从RoPE到YaRN外推</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  
+      <script>
+        if (!window.MathJax) {
+          window.MathJax = {
+            tex    : {
+              inlineMath: { '[+]': [['$', '$']] }
+            },
+            loader : {
+              load: ['ui/lazy']
+            },
+            options: {
+              renderActions: {
+                insertedScript: [200, () => {
+                  document.querySelectorAll('mjx-container').forEach(node => {
+                    let target = node.parentNode;
+                    if (target.nodeName.toLowerCase() === 'li') {
+                      target.parentNode.classList.add('has-jax');
+                    }
+                  });
+                }, '', false]
+              }
+            }
+          };
+        } else {
+          MathJax.startup.document.state(0);
+          MathJax.texReset();
+          MathJax.typeset();
+          MathJax.typesetPromise();
+        }
+
+        Fluid.events.registerRefreshCallback(function() {
+          if ('MathJax' in window && MathJax.startup.document && typeof MathJax.startup.document.state === 'function') {
+            MathJax.startup.document.state(0);
+            MathJax.texReset();
+            MathJax.typeset();
+            MathJax.typesetPromise();
+          }
+        });
+      </script>
+    
+
+  <script  src="https://lib.baomitu.com/mathjax/3.2.2/es5/tex-mml-chtml.js" ></script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
