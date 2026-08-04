@@ -8,7 +8,6 @@ require 'yaml'
 ROOT = Pathname(__dir__).join('..').expand_path
 
 EXPECTED_URLS = {
-  '2025-10-27-hello-world.md' => '/2025/10/27/hello-world/',
   '2025-11-03-Transformer-position-embedding1.md' => '/2025/11/03/Transformer-position-embedding1/',
   '2025-11-04-Transformer-position-embedding2.md' => '/2025/11/04/Transformer-position-embedding2/',
   '2025-11-05-论文阅读1-tpugraphs.md' => '/2025/11/05/论文阅读1-tpugraphs/',

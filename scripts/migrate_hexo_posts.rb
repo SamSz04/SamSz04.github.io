@@ -13,7 +13,6 @@ POSTS_DIR = ROOT.join('_posts')
 ASSET_ROOT = ROOT.join('assets/img/posts')
 
 DESCRIPTIONS = {
-  'hello-world' => 'Hexo 博客的第一篇文章与快速入门记录。',
   'Transformer-position-embedding1' => '从自注意力的置换不变性出发，梳理绝对、相对与旋转位置编码的基本思路。',
   'Transformer-position-embedding2' => '系统梳理 RoPE 的原理、数学形式及其在 Transformer 中的实现逻辑。',
   'Transformer3' => '从 RoPE 的长度外推问题出发，解析 YaRN 的 NTK-by-parts 与注意力缩放。',
@@ -67,7 +66,7 @@ def make_markdown_images_responsive(body)
 end
 
 database = JSON.parse(DATABASE.read)
-posts = database.fetch('models').fetch('Post')
+posts = database.fetch('models').fetch('Post').reject { |post| post.fetch('slug') == 'hello-world' }
 
 FileUtils.mkdir_p(POSTS_DIR)
 
@@ -91,7 +90,7 @@ posts.each do |post|
     'description' => DESCRIPTIONS.fetch(slug),
     'tags' => normalize_list(metadata['tags']),
     'categories' => normalize_list(metadata['categories']),
-    'related_posts' => slug != 'hello-world'
+    'related_posts' => true
   }
   yaml = YAML.dump(output_metadata).sub(/\A---\s*\n/, '')
   filename = format('%<year>04d-%<month>02d-%<day>02d-%<slug>s.md', year: day.year, month: day.month, day: day.day, slug: slug)
