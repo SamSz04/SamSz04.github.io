@@ -19,7 +19,7 @@ announcements:
   limit: 5 # leave blank to include all the news in the `_news` folder
 
 latest_posts:
-  enabled: true
+  enabled: false # rendered explicitly below to preserve title capitalization
   scrollable: true # adds a vertical scroll bar if there are more than 3 new posts items
   limit: 3 # leave blank to include all the blog posts
 ---
@@ -29,3 +29,7 @@ I am a first-year Ph.D. student in the School of Computer Science at Shanghai Ji
 My research interests lie in efficient inference for large language models, with a particular focus on hardware-aware optimization for TPU platforms. I am also interested in exploring applications of AI in communication systems, broadly known as Telecom AI.
 
 I am always happy to discuss research and potential collaborations. Please feel free to contact me.
+
+<h2><a href="{{ '/blog/' | relative_url }}" style="color: inherit">Latest Posts</a></h2>
+
+{% include latest_posts.liquid %}
