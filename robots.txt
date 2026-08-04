@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+
+Sitemap: https://samsz04.github.io/sitemap.xml
