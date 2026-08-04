@@ -21,13 +21,6 @@ DESCRIPTIONS = {
   'fpga-cgra-systolic-array-report' => '以深度学习硬件加速为背景，理解计算粒度、数据流与可重构性之间的取舍。'
 }.freeze
 
-SIDEBAR_TOC = %w[
-  Transformer-position-embedding1
-  Transformer-position-embedding2
-  Transformer3
-  fpga-cgra-systolic-array-report
-].freeze
-
 def normalize_list(value)
   case value
   when nil
@@ -69,6 +62,10 @@ def migrate_image_references(body, slug)
   body
 end
 
+def make_markdown_images_responsive(body)
+  body.gsub(/^(!\[[^\n]*\]\([^\n]*\))$/) { "#{$1}{: .img-fluid }" }
+end
+
 database = JSON.parse(DATABASE.read)
 posts = database.fetch('models').fetch('Post')
 
@@ -85,6 +82,7 @@ posts.each do |post|
   body = body.gsub(/<!--\s*more\s*-->/i, '')
   body = body.gsub(/<span\s+id=["']more["']><\/span>/i, '')
   body = migrate_image_references(body, slug).strip
+  body = make_markdown_images_responsive(body)
 
   output_metadata = {
     'layout' => 'post',
@@ -95,8 +93,6 @@ posts.each do |post|
     'categories' => normalize_list(metadata['categories']),
     'related_posts' => slug != 'hello-world'
   }
-  output_metadata['toc'] = { 'sidebar' => 'left' } if SIDEBAR_TOC.include?(slug)
-
   yaml = YAML.dump(output_metadata).sub(/\A---\s*\n/, '')
   filename = format('%<year>04d-%<month>02d-%<day>02d-%<slug>s.md', year: day.year, month: day.month, day: day.day, slug: slug)
   POSTS_DIR.join(filename).write("---\n#{yaml}---\n\n#{body}\n")

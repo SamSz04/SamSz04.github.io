@@ -8,8 +8,6 @@ tags:
 categories:
   - AI
 related_posts: true
-toc:
-  sidebar: left
 ---
 
 ## 第一部分：问题的根源——RoPE 的“上下文天花板”
@@ -20,7 +18,7 @@ toc:
 
 大型语言模型 (LLM) 的能力在很大程度上与其能够处理的上下文窗口大小相关。扩展上下文窗口对于解锁更复杂的应用至关重要，例如处理长文档摘要、执行“大海捞针”式的知识库问答 (RAG)，或在大型代码库中进行辅助编程 。然而，大多数开源的 LLM（例如 Llama 2 系列）在设计上都受限于其预训练阶段设定的上下文窗口（例如 4096 个 token），这构成了它们能力的“天花板”。
 
-![]({{ '/assets/img/posts/Transformer3/image1.jpg' | relative_url }})
+![]({{ '/assets/img/posts/Transformer3/image1.jpg' | relative_url }}){: .img-fluid }
 
 ### 1.2 RoPE 回顾（可参考笔者上期内容：[Transformer位置编码(2)——RoPE](https://samsz04.github.io/2025/11/04/Transformer-position-embedding2/)）
 
@@ -36,7 +34,7 @@ $$
 
 其中 $ b $ 是一个固定的基数（例如 10000），$ D $ 是特征维度。
 
-![]({{ '/assets/img/posts/Transformer3/image2.jpg' | relative_url }})
+![]({{ '/assets/img/posts/Transformer3/image2.jpg' | relative_url }}){: .img-fluid }
 
 ### 1.3 解构 RoPE 的“外推失败” (Extrapolation Failure)
 
@@ -44,7 +42,7 @@ RoPE 的优雅设计在预训练窗口（例如 $ L=4096 $）内表现出色，�
 
 这种失败的根源在于其位置编码方法的“有限外推能力”。这被视为一个“预测阶段的分布外 (Out-Of-Distribution, OOD) 问题”。研究发现，即使使用了 RoPE 这样的相对编码，Transformer 模型仍然会“过拟合” (overfit) 它们在训练期间看到的特定位置嵌入。此外，训练动态也加剧了这一问题：处于序列后部（rear positions）的位置嵌入在训练中被更新的频率远低于前部位置，导致它们在更长上下文中的泛化能力很差。
 
-![]({{ '/assets/img/posts/Transformer3/image3.webp' | relative_url }})
+![]({{ '/assets/img/posts/Transformer3/image3.webp' | relative_url }}){: .img-fluid }
 
 ### 1.4 深度洞察：为什么“相对”的 RoPE 会“绝对”地失败？
 
@@ -108,7 +106,7 @@ $$
 
 然而，PI 并非没有代价。它的主要缺陷在于它*统一*缩放了所有维度。PI 牺牲了位置的“分辨率”来换取“范围”。
 
-![]({{ '/assets/img/posts/Transformer3/image5.jpg' | relative_url }})
+![]({{ '/assets/img/posts/Transformer3/image5.jpg' | relative_url }}){: .img-fluid }
 
 这个代价的产生过程如下：
 
@@ -120,13 +118,13 @@ $$
 6. 这就是“高频信息损失” (loss of high frequency) 或“近距离 token 混淆” (confusion about positional order of close-by tokens) 的根本原因。
 7. **后果：** 经过 PI 微调的模型，虽然获得了长上下文能力，但在*短*上下文任务上的表现却会下降。
 
-![]({{ '/assets/img/posts/Transformer3/image6.jpg' | relative_url }})
+![]({{ '/assets/img/posts/Transformer3/image6.jpg' | relative_url }}){: .img-fluid }
 
 ### 2.3 解决方案二："NTK-aware" 缩放——“非线性”修复
 
 "NTK-aware" 缩放的提出正是为了解决 PI 丢失高频信息的问题。该方法受到了神经切线核 (Neural Tangent Kernel, NTK) 理论的启发，NTK 理论表明高频分量对于深度神经网络的学习至关重要。
 
-![]({{ '/assets/img/posts/Transformer3/image7.jpg' | relative_url }})
+![]({{ '/assets/img/posts/Transformer3/image7.jpg' | relative_url }}){: .img-fluid }
 
 - **核心思想：** 与其缩放位置 $ m $，不如缩放 RoPE 的*基频 (base)* $ b $ 。
 
@@ -156,7 +154,7 @@ $$
 
 我们也可以从**时钟**的角度来理解。RoPE 的行为就像一个时钟，每一个 $ \theta $ 值就控制着一块圆盘的转动速度，一共有 $ d/2 $ 个圆盘。
 
-![]({{ '/assets/img/posts/Transformer3/image8.jpg' | relative_url }})
+![]({{ '/assets/img/posts/Transformer3/image8.jpg' | relative_url }}){: .img-fluid }
 
 我们假设前三个转盘是秒针，分针和时针。12小时时钟基本上是一个维度为 3、底数为 60 的 RoPE。秒针，分针和时针是不同的频率在旋转。（频率从高到低）每秒钟，分针转动 1/60 分钟，每分钟，时针转动 1/60。现在RoPE时钟一天最大能表达：60 _ 60 _ 12=43200s。如果希望时钟表达的时间变长，假如想表达4天，则需要将时钟减慢4倍，那么有如下两种方法：
 
@@ -245,7 +243,7 @@ $$
 
 综上所述，"NTK-by-parts" 保留了 PI 的“插值”稳定性（用于低频），又获得了 NTK-aware 的“高频保留”优势（用于高频），同时规避了两者的所有缺点。
 
-![]({{ '/assets/img/posts/Transformer3/image9.jpg' | relative_url }})
+![]({{ '/assets/img/posts/Transformer3/image9.jpg' | relative_url }}){: .img-fluid }
 
 ## 第四部分：YaRN 的核心机制 (II) —— 注意力缩放与温度调节
 

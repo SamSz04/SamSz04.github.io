@@ -12,8 +12,6 @@ tags:
 categories:
   - AI
 related_posts: true
-toc:
-  sidebar: left
 ---
 
 > 以深度学习硬件加速为背景，理解计算粒度、数据流与可重构性之间的取舍
@@ -61,7 +59,7 @@ $$
 
 卷积加速器中常见的 Weight Stationary、Output Stationary 与 Row Stationary，并不是三种芯片，而是三种数据驻留策略。
 
-![卷积计算中的四种数据流：权重驻留、输出驻留、无局部复用与行驻留]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/cnn-dataflow-ws-os-nlr-rs.png' | relative_url }})
+![卷积计算中的四种数据流：权重驻留、输出驻留、无局部复用与行驻留]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/cnn-dataflow-ws-os-nlr-rs.png' | relative_url }}){: .img-fluid }
 
 _图 2：四种卷积数据流中的数据移动。红色表示权重，蓝色表示输入激活，绿色虚线表示部分和。WS 与 OS 分别把权重和输出留在 PE 附近；NLR 几乎不利用 PE 内部复用；RS 则尝试同时挖掘多类数据的局部复用。图片来自 Luo 论文 Figure 1。<sup><a href="#ref-1">[1]</a></sup>_
 
@@ -86,7 +84,7 @@ FPGA 的基本资源包括查找表（LUT）、触发器、片上存储、DSP �
 
 灵活性也带来明显成本。为了让任意逻辑和连线都能被重新配置，FPGA 必须保留大量配置 SRAM、多路选择器和通用路由资源。同一个字级乘加运算，在 FPGA 上往往需要穿过比专用电路更复杂的可编程结构。芯片面积和功耗中，有相当一部分用于“保持一切皆可改变”，而不是直接完成目标计算。
 
-![FPGA 与 CGRA 的重构粒度对比：LUT 映射布尔逻辑，ALU 映射字级运算]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/fpga-cgra-reconfiguration-granularity.jpg' | relative_url }})
+![FPGA 与 CGRA 的重构粒度对比：LUT 映射布尔逻辑，ALU 映射字级运算]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/fpga-cgra-reconfiguration-granularity.jpg' | relative_url }}){: .img-fluid }
 
 _图 3：细粒度与粗粒度重构的概念对比。左侧 FPGA 将布尔函数分解并映射到 LUT；右侧 CGRA 将数据流图中的字级运算映射到已经具备算术功能的 ALU。图片引自 Ansaloni 的博士论文 Figure 1.1。<sup><a href="#ref-7">[7]</a></sup>_
 
@@ -104,7 +102,7 @@ Caffeine 揭示了一条容易被混淆的边界：**FPGA 和脉动阵列不是�
 
 CGRA 同样具有可重构性，但它不再从布尔逻辑和位级布线开始。典型 CGRA 由一组处理单元（PE）、配置存储、可编程互连以及局部或全局存储组成。每个 PE 通常已经能够执行加法、乘法、MAC、比较或逻辑运算。
 
-![4×4 CGRA 阵列及单个处理单元的内部结构]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/cgra-array-and-processing-element.webp' | relative_url }})
+![4×4 CGRA 阵列及单个处理单元的内部结构]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/cgra-array-and-processing-element.webp' | relative_url }}){: .img-fluid }
 
 _图 4：一个简化的 4×4 CGRA 及 PE 内部结构。阵列周围的数据缓冲区和上下文存储分别保存操作数与配置；PE 内的输入选择器、ALU 和寄存器共同决定“数据从哪里来、执行什么运算、结果到哪里去”。图片引自 Damsgaard、Ometov 与 Nurmi 的 Figure 1。<sup><a href="#ref-8">[8]</a></sup>_
 
@@ -112,7 +110,7 @@ _图 4：一个简化的 4×4 CGRA 及 PE 内部结构。阵列周围的数据�
 
 CGRA 的编译器会把程序中的数据流图映射到物理阵列。这个过程至少包含四个相互制约的问题：操作放在哪个 PE 上，操作在哪个周期执行，中间值经过哪条路由，以及输入和结果放在哪一级存储。空间资源不足时，同一个 PE 还可以在不同周期执行不同操作，形成时间复用。
 
-![数据流图向 CGRA 处理单元阵列与多 Bank 局部存储的映射]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/cgra-dfg-to-pe-array-mapping.png' | relative_url }})
+![数据流图向 CGRA 处理单元阵列与多 Bank 局部存储的映射]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/cgra-dfg-to-pe-array-mapping.png' | relative_url }}){: .img-fluid }
 
 _图 5：从程序数据流图到 CGRA 的空间映射。上方节点表示循环中的操作及依赖；下方把这些操作放置到 PE 阵列，并将数据安排到多 Bank 局部存储。深色节点对应 load/store 等访存操作，虚线表示它们与存储系统之间的关联。图片引自 Kim 等人的 CGRA 映射研究。<sup><a href="#ref-9">[9]</a></sup>_
 
@@ -165,7 +163,7 @@ Luo 的论文讨论了几种不同形态的粗粒度空间加速器：
 
 理解完 FPGA 与 CGRA，再回看脉动阵列，就能发现“长得像”并不等于“执行方式相同”。
 
-![权重驻留脉动阵列：激活横向传播，部分和纵向累加]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/systolic_array.png' | relative_url }})
+![权重驻留脉动阵列：激活横向传播，部分和纵向累加]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/systolic_array.png' | relative_url }}){: .img-fluid }
 
 _图 6：一种权重驻留脉动阵列。权重预加载到 PE，输入激活向右传播，部分和向下传播。_
 
@@ -224,7 +222,7 @@ MAERI 通过可配置的分发与归约网络，让同一组乘法器支持不�
 
 把 FPGA、CGRA 与脉动阵列放在同一张设计图上，可以看到一条连续光谱。
 
-![ASIC、CGRA、FPGA、GPU、DSP 与 CPU 在能效、灵活性和性能维度上的概念位置]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/architecture-design-space-efficiency-flexibility-performance.jpg' | relative_url }})
+![ASIC、CGRA、FPGA、GPU、DSP 与 CPU 在能效、灵活性和性能维度上的概念位置]({{ '/assets/img/posts/fpga-cgra-systolic-array-report/architecture-design-space-efficiency-flexibility-performance.jpg' | relative_url }}){: .img-fluid }
 
 _图 7：不同计算架构在能效、可编程灵活性与性能维度上的定性位置。本文讨论的专用脉动阵列通常以 ASIC 实现，因此可以落在图中的 ASIC 区域；CGRA 与 FPGA 则分别代表粗粒度和细粒度可重构计算。椭圆的位置和范围仅表达典型趋势，不是统一工作负载、工艺和精度下的基准测试结果。图片为知乎转载版本，原始制图来源与数据口径未能确认。_
 

@@ -1,8 +1,8 @@
 ---
 layout: page
 permalink: /repositories/
-title: 代码
-description: GitHub 主页与公开仓库
+title: Code
+description: GitHub profile and public repositories
 nav: true
 nav_order: 2
 ---
@@ -37,7 +37,7 @@ nav_order: 2
 
 {% if site.data.repositories.github_repos %}
 
-## 公开仓库
+## Public Repositories
 
 <div class="repositories d-flex flex-wrap flex-md-row flex-column justify-content-between align-items-center">
   {% for repo in site.data.repositories.github_repos %}

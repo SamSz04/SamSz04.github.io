@@ -32,6 +32,9 @@ posts.each do |post|
   abort "Missing title: #{post}" if metadata['title'].to_s.empty?
   abort "Missing description: #{post}" if metadata['description'].to_s.empty?
 
+  unresponsive_images = content.lines.grep(/^!\[/).reject { |line| line.include?('{: .img-fluid }') }
+  abort "Markdown images must be responsive: #{post}" unless unresponsive_images.empty?
+
   references.concat(content.scan(%r{\{\{ '/assets/img/posts/([^']+)' \| relative_url \}\}}).flatten)
 
   filename = post.basename.to_s.force_encoding(Encoding::UTF_8)

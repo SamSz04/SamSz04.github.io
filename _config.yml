@@ -2,19 +2,18 @@
 # Site settings
 # -----------------------------------------------------------------------------
 
-title: "SamSz04's Blog" # the website title (if blank, full name will be used instead)
-first_name: SamSz04
+title: blank # use the full name below as the site title
+first_name: Zhan
 middle_name:
-last_name:
-contact_note: >
-  欢迎通过 <a href="https://github.com/SamSz04">GitHub</a> 与我联系。
+last_name: Shi
+contact_note:
 description: > # the ">" symbol means to ignore newlines until "footer_text:"
-  SamSz04 的个人主页与技术博客，记录 AI 加速器、编译器、计算机体系结构与 Transformer。
+  Personal website of Zhan Shi, featuring research interests in efficient LLM inference, TPU systems, and Telecom AI.
 footer_text: >
   Powered by <a href="https://jekyllrb.com/" target="_blank">Jekyll</a> with <a href="https://github.com/alshedivat/al-folio">al-folio</a> theme.
   Hosted by <a href="https://pages.github.com/" target="_blank">GitHub Pages</a>.
-keywords: AI accelerator, compiler, computer architecture, Transformer, TPU, CGRA, FPGA # add your own keywords or leave empty
-lang: zh-CN # the language of your site (for example: en, fr, cn, ru, etc.)
+keywords: efficient LLM inference, TPU, AI systems, Telecom AI, communication systems # add your own keywords or leave empty
+lang: en # the language of your site (for example: en, fr, cn, ru, etc.)
 timezone: Asia/Shanghai # keep +0800 post dates stable across local and CI builds
 icon: logo0.jpg # the emoji used as the favicon (alternatively, provide image name in /assets/img/)
 apple_touch_icon: # image name in /assets/img/ (or a rooted path / absolute URL) used for iOS home-screen bookmarks; needs a real 180x180 PNG, since Safari ignores the emoji favicon above. Left empty, iOS falls back to a screenshot of the page.
@@ -136,8 +135,8 @@ bing_site_verification: # out your bing-site-verification ID (Bing Webmaster)
 # Blog
 # -----------------------------------------------------------------------------
 
-blog_name: "SamSz04's Blog" # blog_name will be displayed in your blog page
-blog_description: AI 加速器、编译器、体系结构与大模型技术笔记
+blog_name: "Zhan's Blog" # blog_name will be displayed in your blog page
+blog_description: Notes on efficient LLM inference, TPU systems, computer architecture, and Telecom AI.
 permalink: /:year/:month/:day/:title/
 lsi: false # produce an index for related posts
 

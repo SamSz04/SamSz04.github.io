@@ -8,23 +8,21 @@ tags:
 categories:
   - AI
 related_posts: true
-toc:
-  sidebar: left
 ---
 
 ## 第一部分：深入解析旋转位置编码（RoPE）
 
 旋转位置编码（RoPE）代表了位置编码领域的一次范式转移，它通过一种新颖的**几何视角**统一了绝对位置编码和相对位置编码。自提出以来，RoPE因其优越的性能和良好的理论特性，迅速成为众多先进大语言模型（如Llama、PaLM、Qwen）的标准配置。
 
-![]({{ '/assets/img/posts/Transformer-position-embedding2/image1.png' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding2/image1.png' | relative_url }}){: .img-fluid }
 
 ### 1.1 概念框架：通过旋转编码位置
 
 RoPE的**核心思想**极其直观且优雅：它不再通过向量加法来注入位置信息，而是通过**旋转**查询（Q）和键（K）向量来实现。**每个词元在序列中的绝对位置 $m$ 对应一个特定的旋转角度**。当Q和K向量根据它们各自的绝对位置 $m$ 和 $n$ 进行旋转后，它们之间的点积（即注意力分数的核心部分）将**只依赖于它们的相对位置 $m-n$**。
 
-![]({{ '/assets/img/posts/Transformer-position-embedding2/image2.png' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding2/image2.png' | relative_url }}){: .img-fluid }
 
-![]({{ '/assets/img/posts/Transformer-position-embedding2/image3.webp' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding2/image3.webp' | relative_url }}){: .img-fluid }
 
 我们可以借助一个“时钟”的比喻来理解这个过程：
 
@@ -33,7 +31,7 @@ RoPE的**核心思想**极其直观且优雅：它不再通过向量加法来注
 3. **位置即角度**：**一个词元的绝对位置 $m$ 决定了所有指针需要旋转的角度**。具体来说，第 $i$ 个指针的旋转角度是 $m \cdot \theta_i$，其中 $\theta_i$ 是该指针固有的转速。
 4. **相对位置的体现**：当计算位置为 $m$ 的查询和位置为 $n$ 的键之间的注意力时，我们实际上是在比较这两个“时钟”状态。由于**点积运算对旋转具有不变性**（两个向量一起旋转相同的角度，它们的点积不变），最终的计算结果只取决于两个时钟指针之间的**角度差**，这个差值正比于相对距离 $m-n$。
 
-![]({{ '/assets/img/posts/Transformer-position-embedding2/image4.png' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding2/image4.png' | relative_url }}){: .img-fluid }
 
 这种多尺度的旋转机制是RoPE成功的关键。快速旋转的指针（低维，高频）能够精确地区分邻近的位置，为模型提供细粒度的局部信息。而缓慢旋转的指针（高维，低频）则能在很长的距离上保持独特的角度，从而为模型提供捕捉远距离依赖所需的粗粒度全局信息。这种设计避免了单一频率可能导致的“混叠”问题，即在某个周期后，不同位置的旋转状态变得无法区分。
 
@@ -78,9 +76,9 @@ $$
 
 对于整个 $d$ 维向量，这个操作**相当于左乘一个块对角矩阵**，其中**每个对角块都是一个2D旋转矩阵**。
 
-![]({{ '/assets/img/posts/Transformer-position-embedding2/image5.webp' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding2/image5.webp' | relative_url }}){: .img-fluid }
 
-![]({{ '/assets/img/posts/Transformer-position-embedding2/image6.webp' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding2/image6.webp' | relative_url }}){: .img-fluid }
 
 旋转的频率 $\theta_i$ 通常按照以下公式定义：
 
@@ -98,7 +96,7 @@ RoPE之所以被广泛采用，得益于其几个核心的理论优势：
 2. **远程依赖的衰减特性**：从数学上可以证明，经过RoPE旋转后的两个向量，它们的内积会随着相对距离 $|m-n|$ 的增大而衰减。这为模型提供了一个非常有用的归纳偏置：**距离越近的词元通常关系越密切，注意力得分应该越高；反之，距离越远的词元关系可能越弱**。
 3. **与线性注意力的兼容性**：这是RoPE相较于传统RPE的一个决定性优势。因为RoPE是对Q和K向量的独立预处理，它发生在点积注意力计算之前。这意味着它与任何旨在避免计算完整注意力矩阵的线性注意力或高效注意力机制都是**完全兼容**的。这使得RoPE能够应用于对计算效率要求极高的超长序列模型中。
 
-![]({{ '/assets/img/posts/Transformer-position-embedding2/image7.webp' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding2/image7.webp' | relative_url }}){: .img-fluid }
 
 ### 1.4 现代大语言模型中的RoPE分析：以Llama 3的`rope_theta`为例
 
@@ -142,7 +140,7 @@ RoPE在处理一维文本序列方面取得了巨大成功，但真实世界的�
 
 ### 2.3 交错式RoPE变体：频率分配的范式转变
 
-![]({{ '/assets/img/posts/Transformer-position-embedding2/image7.jpg' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding2/image7.jpg' | relative_url }}){: .img-fluid }
 
 为了克服分块式分配的缺陷，一种更先进的策略——**“交错式”**(Interleaved)频率分配——被提出并应用于Qwen3-VL等模型中。
 

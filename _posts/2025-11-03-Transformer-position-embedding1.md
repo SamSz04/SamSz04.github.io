@@ -8,8 +8,6 @@ tags:
 categories:
   - AI
 related_posts: true
-toc:
-  sidebar: left
 ---
 
 ## 第一部分：Transformer中位置信息的基础原理
@@ -26,7 +24,7 @@ Transformer架构的核心是**自注意力（Self-Attention）机制**，它赋
 
 Transformer架构通过完全摒弃循环结构，实现了对整个输入序列的并行处理，从而极大地提升了计算效率。模型中的每个词元可以同时与所有其他词元进行交互，这使得Transformer能够高效地处理长序列。然而，正是这种架构选择，即用并行计算换取顺序处理，导致了模型失去了对序列顺序的内在感知能力。因此，**位置编码**（Positional Encoding）应运而生，它是一种工程上的解决方案，旨在将至关重要的顺序信息重新注入到一个本质上是并行化的框架中。这体现了在计算效率和结构感知能力之间经典的工程权衡。
 
-![]({{ '/assets/img/posts/Transformer-position-embedding1/image1.jpg' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding1/image1.jpg' | relative_url }}){: .img-fluid }
 
 ### 1.2 位置编码策略分类
 
@@ -60,19 +58,19 @@ $$
 - $i$ 是位置编码向量中的维度索引（从0开始）。
 - $d_{\text{model}}$​ 是词元嵌入和位置编码向量的总维度。
 
-![]({{ '/assets/img/posts/Transformer-position-embedding1/image2.webp' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding1/image2.webp' | relative_url }}){: .img-fluid }
 
-![]({{ '/assets/img/posts/Transformer-position-embedding1/image3.png' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding1/image3.png' | relative_url }}){: .img-fluid }
 
 这个公式的设计蕴含了深刻的考量。首先，通过**交替使用正弦和余弦函数**，并为每个维度对（$2i$ 和 $2i+1$）分配一个不同的波长（频率），它为每个位置 $pos$ 生成了一个唯一的 $d_{\text{model}}$ 维向量。这些波长的变化范围从短到长：对于维度索引 $i$ 较小的**低维部分**（例如，$i=0,1,2...$，即编码向量的起始部分），分母中的指数项接近0，使得频率很大（接近1），对应的波长很短，函数值变化迅速。这种快速的变化为模型提供了非常精确的、关于**相邻词元**之间差异的信号。模型可以轻易地分辨出“这是第3个词”和“这是第4个词”；对于**高维部分**（例如，$i$接近$d_{model}/2$，即编码向量的末尾部分），频率则变得非常小，对应波长较大，那么函数值会随着$pos$的增加而变得非常缓慢，只有当$pos$的值发生巨大变化时（例如，从$pos=5$到$pos=500$），编码值才会有明显的不同，从而使模型把握到全局信息。这种多尺度的频率组合使得模型能够同时捕捉到粗粒度和细粒度的位置信息。
 
-![]({{ '/assets/img/posts/Transformer-position-embedding1/image4.jpg' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding1/image4.jpg' | relative_url }}){: .img-fluid }
 
 其次，这种基于正弦函数的设计有一个重要的特性：对于任意固定的偏移量 $k$，位置 $pos+k$ 的位置编码 $PE_{(pos+k)}$ 可以表示为 $PE_{(pos)}$ 的线性函数。这一特性使得模型能够更容易地学习到**相对位置关系**。模型可以通过注意力机制学习到如何关注相距特定距离的词元，因为它们的**位置编码之间存在固定的线性变换关系**。
 
 最后，一个常被引用的优点是，这种确定性的公式使得模型理论上能够外推到比训练时遇到的更长的序列长度。因为即使对于未见过的位置 $pos$，我们依然可以计算出其对应的位置编码向量（泛化能力更强）。生成的位置编码向量会与词元的语义嵌入向量逐元素相加，形成最终的输入表示，然后被送入Transformer的后续层。
 
-![]({{ '/assets/img/posts/Transformer-position-embedding1/image5.png' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding1/image5.png' | relative_url }}){: .img-fluid }
 
 ### 2.2 相对位置编码（RPE）的兴起
 
@@ -116,7 +114,7 @@ RPE通过直接修改注意力分数，为模型提供了更强大的、关于�
 
 至此，我们已经完整地回顾了位置编码技术演进的脉络。我们从Transformer架构最根本的需求——克服“置换不变性”——出发，了解了最初的绝对位置编码（APE）如何通过巧妙的正弦函数设计，为模型注入了顺序感。随后，我们看到了相对位置编码（RPE）的兴起，它将关注点从“绝对位置”转向了更灵活的“相对距离”，为模型提供了更强的归纳偏置。
 
-![]({{ '/assets/img/posts/Transformer-position-embedding1/image6.jpg' | relative_url }})
+![]({{ '/assets/img/posts/Transformer-position-embedding1/image6.jpg' | relative_url }}){: .img-fluid }
 
 然而，正如我们的对比分析所揭示的，这场演进也带来了一个深刻的架构矛盾：随着模型对计算效率的要求越来越高，尤其是线性注意力机制的出现，旨在修改注意力矩阵的RPE方案变得难以兼容。一个核心问题摆在了研究者面前：**我们能否创造出一种既拥有RPE相对位置建模的强大能力，又具备APE计算上的高效与分离特性的位置编码方法？**
 

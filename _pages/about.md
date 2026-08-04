@@ -1,13 +1,13 @@
 ---
 layout: about
-title: 关于
+title: About
 permalink: /
-subtitle: AI · Computer Architecture · Compilers
+subtitle: Efficient LLM Inference · Telecom AI
 
 profile:
   align: right
   image: profile/photo.jpg
-  image_circular: true # crops the image to make it circular
+  image_circular: false # preserves the photo's original rectangular shape
   more_info:
 
 selected_papers: false # includes a list of papers marked as "selected={true}"
@@ -24,8 +24,8 @@ latest_posts:
   limit: 3 # leave blank to include all the blog posts
 ---
 
-你好，我是 **SamSz04**。
+I am a first-year Ph.D. student in the School of Computer Science at Shanghai Jiao Tong University, advised by [Prof. Kai Ying](https://scholar.google.com/citations?user=3BS5jOsAAAAJ&hl=en). I received my B.Eng. in Software Engineering from Shanghai Jiao Tong University.
 
-这里是我的个人主页与技术博客。我主要记录 AI 加速器、编译器、计算机体系结构以及 Transformer 相关的学习与研究笔记。
+My research interests lie in efficient inference for large language models, with a particular focus on hardware-aware optimization for TPU platforms. I am also interested in exploring applications of AI in communication systems, broadly known as Telecom AI.
 
-旧站中的文章和图片已经迁移到新的 al-folio 结构，并保留原有文章 URL，便于继续访问与引用。
+I am always happy to discuss research and potential collaborations. Please feel free to contact me.
