@@ -24,7 +24,7 @@ latest_posts:
   limit: 3 # leave blank to include all the blog posts
 ---
 
-I am a first-year Ph.D. student in the School of Computer Science at Shanghai Jiao Tong University, advised by [Prof. Kai Ying](https://scholar.google.com/citations?user=3BS5jOsAAAAJ&hl=en). I received my B.Eng. in Software Engineering from Shanghai Jiao Tong University.
+I am a first-year Ph.D. student in the School of Computer Science at **Shanghai Jiao Tong University** <img class="sjtu-inline-logo" src="{{ '/assets/img/institutions/sjtu-emblem.png' | relative_url }}" alt="" aria-hidden="true"> (SJTU), advised by [Prof. Kai Ying](https://scholar.google.com/citations?user=3BS5jOsAAAAJ&hl=en). I received my B.Eng. in Software Engineering from SJTU.
 
 My research interests lie in efficient inference for large language models, with a particular focus on hardware-aware optimization for TPU platforms. I am also interested in exploring applications of AI in communication systems, broadly known as Telecom AI.
 
