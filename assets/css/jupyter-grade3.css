@@ -497,6 +497,22 @@ hr {
   z-index: 10;
 }
 
+#toc a,
+.toc {
+  color: #303030 !important;
+  font-size: 11pt !important;
+}
+
+#toc li > span:hover {
+  background-color: #d4d4d4 !important;
+}
+
+#toc a:hover,
+.toc {
+  color: #1c1c1c !important;
+  font-size: 11pt !important;
+}
+
 
 .MathJax {
   border: 0 !important;
