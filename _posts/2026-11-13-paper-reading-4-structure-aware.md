@@ -351,7 +351,3 @@ ViT-Base 得到 +0.44 ms，但 ViT-Small、Swin-Tiny、Swin-Small 分别为 −0
 教学 attention 的状态、表 II/V 的速度比、协同差值及容量/流量示例已用独立计算核对，本文按对应公式独立重算了这些数值。本材料未运行 GPU 内核、未复现论文基准，也未验证作者所称的 INT8 数值误差。
 
 本文基于论文全文、原图与已注明的代码证据整理，使用 AI 辅助梳理和数值核查。性能结果来自论文；补充推导和教学例子不代表 GPU 实测。
-
----
-
-[下载本篇离线阅读包（HTML、Markdown 与图片）]({{ '/assets/downloads/paper-reading-4-structure-aware.zip' | relative_url }})。离线包的公式预渲染为 MathML。

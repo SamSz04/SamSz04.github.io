@@ -247,7 +247,3 @@ RedFuser 的结论提出三条后续方向。首先，修正计算与寄存器�
 - [python/tvm/redfuser/example/generated/test_ptpc_quant_gemm.py](https://github.com/alibaba/redfuser/blob/56bf0b28c569fe160fd0a53a87a9d7f113852940/python/tvm/redfuser/example/generated/test_ptpc_quant_gemm.py)
 
 本文基于论文全文、原图与已注明的代码证据整理，使用 AI 辅助梳理和数值核查。性能结果来自论文；补充推导和教学例子不代表 GPU 实测。
-
----
-
-[下载本篇离线阅读包（HTML、Markdown 与图片）]({{ '/assets/downloads/paper-reading-3-redfuser.zip' | relative_url }})。离线包的公式预渲染为 MathML。

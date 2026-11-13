@@ -228,7 +228,3 @@ Neptune 最有价值的贡献是把算法级修正提升为可组合的编译器
 - [python/tvm/neptune/build.py](https://github.com/uiuc-arc/neptune/blob/f79750113db136e96516c4bb86a980fb1249559c/python/tvm/neptune/build.py)
 
 本文基于论文全文、原图与已注明的代码证据整理，使用 AI 辅助梳理和数值核查。性能结果来自论文；补充推导和教学例子不代表 GPU 实测。
-
----
-
-[下载本篇离线阅读包（HTML、Markdown 与图片）]({{ '/assets/downloads/paper-reading-2-neptune.zip' | relative_url }})。离线包的公式预渲染为 MathML。
